@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Week 3 Lesson — Oscillations &amp; Phase Space</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    color: #2d3b45;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  h1 { color: #ff8200; border-bottom: 3px solid #ff8200; padding-bottom: 10px; }
+  h2 { color: #58595b; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-top: 40px; }
+  h3 { color: #ff8200; margin-top: 28px; }
+  .concept-box {
+    background-color: #fff3cd;
+    border-left: 4px solid #ff8200;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .key-idea {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .physics-note {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .warning-box {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .try-it {
+    background-color: #e8d5f5;
+    border-left: 4px solid #6f42c1;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.88em;
+    line-height: 1.55;
+  }
+  pre .comment { color: #6a9955; }
+  pre .keyword { color: #569cd6; }
+  pre .string { color: #ce9178; }
+  pre .number { color: #b5cea8; }
+  pre .function { color: #dcdcaa; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+  th { background-color: #ff8200; color: white; }
+  tr:nth-child(even) { background-color: #f9f9f9; }
+  details { margin: 12px 0; padding: 10px 15px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; }
+  details summary { cursor: pointer; font-weight: bold; color: #ff8200; }
+  .eq { text-align: center; margin: 15px 0; font-size: 1.1em; font-style: italic; }
+  a { color: #006c93; }
+  .breadcrumb { color: #888; font-size: 0.9em; margin-bottom: 5px; }
+  .objectives { background-color: #f0f7ff; border: 1px solid #b8d4f0; padding: 15px 20px; border-radius: 6px; margin: 15px 0; }
+  .nav-box { display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #ddd; margin-top: 40px; }
+  .nav-box a { color: #ff8200; font-weight: bold; text-decoration: none; }
+  .checkpoint-box {
+    background-color: #fff0e6;
+    border: 2px solid #ff8200;
+    padding: 20px;
+    margin: 25px 0;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1 style="color: #000000 !important; background-color: #ffffff !important;">Week 3 — Oscillations &amp; Phase Space</h1>
+
+<div class="objectives">
+  <strong>🎯 By the end of this lesson, you will be able to:</strong>
+  <ul>
+    <li>Simulate the simple harmonic oscillator (SHO) and compare numerical results to the exact solution</li>
+    <li>Demonstrate why standard Euler fails catastrophically for oscillators and why Euler-Cromer succeeds</li>
+    <li>Construct and interpret phase-space plots (x vs. v)</li>
+    <li>Model damped oscillations and identify underdamped, critically damped, and overdamped regimes</li>
+    <li>Model driven oscillations and observe resonance computationally</li>
+    <li>Use phase-space portraits as a diagnostic tool alongside energy plots</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>1 &nbsp; Why Oscillators Matter</h2>
+
+<p>The harmonic oscillator is the most important system in all of physics. That's not hyperbole. 
+Here is why:</p>
+
+<ul>
+  <li>Every stable equilibrium looks like a harmonic oscillator for small displacements. (Taylor 
+	section 5.1 proves this.)</li>
+  <li>Springs, pendulums, vibrating strings, LC circuits, molecular bonds, even quantum fields all are oscillators or collections of oscillators.</li>
+  <li>Understanding how to simulate an oscillator correctly is the gateway to simulating <em>everything</em></li>
+</ul>
+
+<p>And as you're about to discover, oscillators are the system that most ruthlessly punishes a bad numerical integrator.</p>
+
+<!-- ============================================================ -->
+<h2>2 &nbsp; The Simple Harmonic Oscillator</h2>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">2.1 &nbsp; The physics</h3>
+
+<p>A mass <em>m</em> attached to a spring with spring constant <em>k</em>, displaced from equilibrium:</p>
+
+<div class="eq">F = −kx &nbsp;&nbsp; → &nbsp;&nbsp; a = −(k/m)x = −ω₀²x</div>
+
+<p>where ω₀ = √(k/m) is the <strong>natural frequency</strong>. The exact solution is:</p>
+
+<div class="eq">x(t) = A cos(ω₀t + φ)</div>
+
+<p>The amplitude <em>A</em> and phase φ depend on initial conditions. The period T = 2π/ω₀ is independent of amplitude, a hallmark of the harmonic oscillator.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">2.2 &nbsp; Setting up the simulation</h3>
+
+<p>The state vector is [x, v]. The force function is one line:</p>
+
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">import</span> numpy <span class="keyword" style="font-size: 12pt;">as</span> np
+<span class="keyword" style="font-size: 12pt;">import</span> matplotlib.pyplot <span class="keyword" style="font-size: 12pt;">as</span> plt
+
+<span class="comment" style="font-size: 12pt;"># Parameters</span>
+k = <span class="number" style="font-size: 12pt;">1.0</span>     <span class="comment" style="font-size: 12pt;"># spring constant (N/m)</span>
+m = <span class="number" style="font-size: 12pt;">1.0</span>     <span class="comment" style="font-size: 12pt;"># mass (kg)</span>
+omega0 = np.sqrt(k / m)   <span class="comment" style="font-size: 12pt;"># natural frequency</span>
+T = <span class="number" style="font-size: 12pt;">2</span> * np.pi / omega0      <span class="comment" style="font-size: 12pt;"># period</span>
+
+<span class="comment" style="font-size: 12pt;"># Initial conditions</span>
+x0 = <span class="number" style="font-size: 12pt;">1.0</span>    <span class="comment" style="font-size: 12pt;"># initial displacement (m)</span>
+v0 = <span class="number" style="font-size: 12pt;">0.0</span>    <span class="comment" style="font-size: 12pt;"># released from rest</span>
+
+<span class="comment" style="font-size: 12pt;"># Exact solution for comparison</span>
+<span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">exact_x</span>(t):
+    <span class="keyword" style="font-size: 12pt;">return</span> x0 * np.cos(omega0 * t)
+
+<span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">exact_v</span>(t):
+    <span class="keyword" style="font-size: 12pt;">return</span> -x0 * omega0 * np.sin(omega0 * t)
+</pre>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">2.3 &nbsp; Euler vs. Euler-Cromer: the moment of truth</h3>
+
+<p>Let's run both methods for 10 oscillation periods and see what happens:</p>
+
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">simulate_sho</span>(method, dt, n_periods=<span class="number" style="font-size: 12pt;">10</span>):
+    <span class="string" style="font-size: 12pt;">"""Simulate SHO. Returns t, x, v, E arrays."""</span>
+    t_max = n_periods * T
+    x, v = x0, v0
+    ts, xs, vs, Es = [<span class="number" style="font-size: 12pt;">0</span>], [x], [v], [<span class="number" style="font-size: 12pt;">0.5</span>*k*x**<span class="number" style="font-size: 12pt;">2</span> + <span class="number" style="font-size: 12pt;">0.5</span>*m*v**<span class="number" style="font-size: 12pt;">2</span>]
+    t = <span class="number" style="font-size: 12pt;">0.0</span>
+
+    <span class="keyword" style="font-size: 12pt;">while</span> t &lt; t_max:
+        a = -(k / m) * x
+
+        <span class="keyword" style="font-size: 12pt;">if</span> method == <span class="string" style="font-size: 12pt;">'euler'</span>:
+            x_new = x + v * dt
+            v_new = v + a * dt
+            x, v = x_new, v_new
+        <span class="keyword" style="font-size: 12pt;">elif</span> method == <span class="string" style="font-size: 12pt;">'euler-cromer'</span>:
+            v = v + a * dt       <span class="comment" style="font-size: 12pt;"># velocity first</span>
+            x = x + v * dt       <span class="comment" style="font-size: 12pt;"># then position with new v</span>
+
+        t += dt
+        E = <span class="number" style="font-size: 12pt;">0.5</span> * k * x**<span class="number" style="font-size: 12pt;">2</span> + <span class="number" style="font-size: 12pt;">0.5</span> * m * v**<span class="number" style="font-size: 12pt;">2</span>
+        ts.append(t); xs.append(x); vs.append(v); Es.append(E)
+
+    <span class="keyword" style="font-size: 12pt;">return</span> np.array(ts), np.array(xs), np.array(vs), np.array(Es)
+
+<span class="comment" style="font-size: 12pt;"># Run both with dt = T/50 (moderately coarse)</span>
+dt = T / <span class="number" style="font-size: 12pt;">50</span>
+t_e, x_e, v_e, E_e = simulate_sho(<span class="string" style="font-size: 12pt;">'euler'</span>, dt)
+t_ec, x_ec, v_ec, E_ec = simulate_sho(<span class="string" style="font-size: 12pt;">'euler-cromer'</span>, dt)
+t_exact = np.linspace(<span class="number" style="font-size: 12pt;">0</span>, <span class="number" style="font-size: 12pt;">10</span>*T, <span class="number" style="font-size: 12pt;">2000</span>)
+
+<span class="comment" style="font-size: 12pt;"># ─── Plot: x(t) comparison ────────────────────────────────────</span>
+fig, axes = plt.subplots(<span class="number" style="font-size: 12pt;">3</span>, <span class="number" style="font-size: 12pt;">1</span>, figsize=(<span class="number" style="font-size: 12pt;">12</span>, <span class="number" style="font-size: 12pt;">10</span>), sharex=<span class="keyword" style="font-size: 12pt;">True</span>)
+
+axes[<span class="number" style="font-size: 12pt;">0</span>].plot(t_exact, exact_x(t_exact), <span class="string" style="font-size: 12pt;">'k-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.4</span>, label=<span class="string" style="font-size: 12pt;">'Exact'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].plot(t_e, x_e, <span class="string" style="font-size: 12pt;">'r-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.8</span>, label=<span class="string" style="font-size: 12pt;">'Euler'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].set_ylabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].set_title(<span class="string" style="font-size: 12pt;">'Standard Euler — Position vs. Time'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].legend()
+axes[<span class="number" style="font-size: 12pt;">0</span>].grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+axes[<span class="number" style="font-size: 12pt;">1</span>].plot(t_exact, exact_x(t_exact), <span class="string" style="font-size: 12pt;">'k-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.4</span>, label=<span class="string" style="font-size: 12pt;">'Exact'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].plot(t_ec, x_ec, <span class="string" style="font-size: 12pt;">'b-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.8</span>, label=<span class="string" style="font-size: 12pt;">'Euler-Cromer'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].set_ylabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].set_title(<span class="string" style="font-size: 12pt;">'Euler-Cromer — Position vs. Time'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].legend()
+axes[<span class="number" style="font-size: 12pt;">1</span>].grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+axes[<span class="number" style="font-size: 12pt;">2</span>].plot(t_e, E_e, <span class="string" style="font-size: 12pt;">'r-'</span>, label=<span class="string" style="font-size: 12pt;">'Euler'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].plot(t_ec, E_ec, <span class="string" style="font-size: 12pt;">'b-'</span>, label=<span class="string" style="font-size: 12pt;">'Euler-Cromer'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].axhline(y=E_e[<span class="number" style="font-size: 12pt;">0</span>], color=<span class="string" style="font-size: 12pt;">'k'</span>, linestyle=<span class="string" style="font-size: 12pt;">'--'</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>, label=<span class="string" style="font-size: 12pt;">'True energy'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].set_xlabel(<span class="string" style="font-size: 12pt;">'Time (s)'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].set_ylabel(<span class="string" style="font-size: 12pt;">'Total Energy (J)'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].set_title(<span class="string" style="font-size: 12pt;">'Energy Comparison'</span>)
+axes[<span class="number" style="font-size: 12pt;">2</span>].legend()
+axes[<span class="number" style="font-size: 12pt;">2</span>].grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+plt.tight_layout()
+plt.show()
+</pre>
+
+<div class="warning-box">
+  <strong>⚠️ What you should see:</strong> The Euler solution <em>spirals outward</em>, its amplitude grows with every cycle. After 10 periods, the oscillation is noticeably larger than it should be. The energy plot confirms it: total energy climbs steadily. The Euler-Cromer solution, by contrast, maintains a stable amplitude and its energy oscillates slightly around the true value but never drifts.
+</div>
+
+<div class="key-idea">
+  <strong>💡 Key Idea:</strong> For oscillatory systems, the standard Euler method is not just inaccurate, it is <em>qualitatively wrong</em>. It predicts a system that gains energy over time, which violates physics. Euler-Cromer, with one line of code changed, gets the qualitative behavior right. This is why integrator choice matters, and why we don't just use the "simplest" method.
+</div>
+
+<!-- ============================================================ -->
+<h2>3 &nbsp; Phase Space: A New Way to See Dynamics</h2>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">3.1 &nbsp; What is phase space?</h3>
+
+<p>Instead of plotting x vs. t (position over time), plot <strong>x vs. v</strong> (position vs. velocity). This is a <strong>phase-space plot</strong>, and it reveals the structure of the motion in a completely different way.</p>
+
+<p>For the simple harmonic oscillator, the exact phase-space trajectory is an <strong>ellipse</strong>:</p>
+
+<div class="eq">(x/A)² + (v/(Aω₀))² = 1</div>
+
+<p>The system traces this ellipse forever, going clockwise. It never spirals in or out 
+, the ellipse has a fixed size determined by the total energy.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">3.2 &nbsp; Phase-space plots as a diagnostic</h3>
+
+<pre style="font-size: 12pt;">fig, (ax1, ax2) = plt.subplots(<span class="number" style="font-size: 12pt;">1</span>, <span class="number" style="font-size: 12pt;">2</span>, figsize=(<span class="number" style="font-size: 12pt;">12</span>, <span class="number" style="font-size: 12pt;">5</span>))
+
+<span class="comment" style="font-size: 12pt;"># Euler phase portrait</span>
+ax1.plot(x_e, v_e, <span class="string" style="font-size: 12pt;">'r-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.7</span>, linewidth=<span class="number" style="font-size: 12pt;">0.5</span>)
+ax1.plot(x_e[<span class="number" style="font-size: 12pt;">0</span>], v_e[<span class="number" style="font-size: 12pt;">0</span>], <span class="string" style="font-size: 12pt;">'ko'</span>, markersize=<span class="number" style="font-size: 12pt;">8</span>, label=<span class="string" style="font-size: 12pt;">'Start'</span>)
+ax1.set_xlabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>); ax1.set_ylabel(<span class="string" style="font-size: 12pt;">'v (m/s)'</span>)
+ax1.set_title(<span class="string" style="font-size: 12pt;">'Euler — Phase Space'</span>)
+ax1.set_aspect(<span class="string" style="font-size: 12pt;">'equal'</span>)
+ax1.legend()
+ax1.grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+<span class="comment" style="font-size: 12pt;"># Euler-Cromer phase portrait</span>
+ax2.plot(x_ec, v_ec, <span class="string" style="font-size: 12pt;">'b-'</span>, alpha=<span class="number" style="font-size: 12pt;">0.7</span>, linewidth=<span class="number" style="font-size: 12pt;">0.5</span>)
+ax2.plot(x_ec[<span class="number" style="font-size: 12pt;">0</span>], v_ec[<span class="number" style="font-size: 12pt;">0</span>], <span class="string" style="font-size: 12pt;">'ko'</span>, markersize=<span class="number" style="font-size: 12pt;">8</span>, label=<span class="string" style="font-size: 12pt;">'Start'</span>)
+ax2.set_xlabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>); ax2.set_ylabel(<span class="string" style="font-size: 12pt;">'v (m/s)'</span>)
+ax2.set_title(<span class="string" style="font-size: 12pt;">'Euler-Cromer — Phase Space'</span>)
+ax2.set_aspect(<span class="string" style="font-size: 12pt;">'equal'</span>)
+ax2.legend()
+ax2.grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+plt.tight_layout()
+plt.show()
+</pre>
+
+<div class="key-idea">
+  <strong>💡 Key Idea:</strong> In phase space, the Euler method's energy growth is instantly visible, the trajectory spirals <em>outward</em>. Euler-Cromer produces a closed (or very nearly closed) curve. A perfect integrator would trace a single ellipse over and over. The phase portrait is often <em>more revealing</em> than an x-vs-t plot because you can see the structure of the error at a glance.
+</div>
+
+<div class="try-it">
+  <strong>🧪 Try it:</strong> Run the Euler-Cromer simulation with <code style="font-size: 12pt;">dt = T/20</code> (coarse) and <code style="font-size: 12pt;">dt = T/200</code> (fine). Compare the phase-space plots. You should see that the coarser Δt produces a wider "band" around the ellipse (the slightly different nearby energy that Euler-Cromer conserves), while the finer Δt produces a thinner band. The band width is proportional to Δt.
+</div>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">3.3 &nbsp; Reading a phase portrait</h3>
+
+<p>Phase-space plots encode a lot of information. Here's how to read them:</p>
+
+<table><caption>Summary of features and their meanings in the system's motion characteristics</caption>
+  <thead>
+    <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Feature</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">What It Means</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Closed curve (ellipse, circle)</td><td>Periodic motion, the system repeats</td></tr>
+    <tr><td>Outward spiral</td><td>Energy increasing, numerical error or driven system</td></tr>
+    <tr><td>Inward spiral</td><td>Energy decreasing, damping or dissipation</td></tr>
+    <tr><td>Point (the origin)</td><td>Stable equilibrium</td></tr>
+    <tr><td>Larger ellipse</td><td>Higher energy (larger amplitude)</td></tr>
+    <tr><td>Direction (clockwise for SHO)</td><td>Determined by the signs of dx/dt and dv/dt</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>4 &nbsp; Damped Oscillations</h2>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">4.1 &nbsp; The physics</h3>
+
+<p>Real oscillators lose energy to friction, air resistance, or internal heating. The simplest damping model is a force proportional to velocity (linear drag):</p>
+
+<div class="eq">F = −kx − bv</div>
+
+<p>where <em>b</em> is the damping coefficient. Taylor section 5.4 shows this leads to three regimes depending on the ratio of damping to natural frequency. Define β = b/(2m):</p>
+
+<table><caption>Summary of damping regimes and their effects on system behavior</caption>
+  <thead>
+    <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Regime</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Condition</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Underdamped</strong></td><td>β &lt; ω₀</td><td>Oscillates with exponentially decaying amplitude</td></tr>
+    <tr><td><strong>Critically damped</strong></td><td>β = ω₀</td><td>Returns to equilibrium as fast as possible without oscillating</td></tr>
+    <tr><td><strong>Overdamped</strong></td><td>β &gt; ω₀</td><td>Returns to equilibrium slowly, no oscillation</td></tr>
+  </tbody>
+</table>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">4.2 &nbsp; In code</h3>
+
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">simulate_damped_sho</span>(beta, dt=<span class="number" style="font-size: 12pt;">0.02</span>, t_max=<span class="number" style="font-size: 12pt;">30.0</span>):
+    <span class="string" style="font-size: 12pt;">"""Simulate damped SHO with Euler-Cromer.
+    beta = b/(2m) is the damping parameter.
+    """</span>
+    x, v = x0, v0
+    b_damp = <span class="number" style="font-size: 12pt;">2</span> * m * beta  <span class="comment" style="font-size: 12pt;"># recover b from beta</span>
+    ts, xs, vs = [<span class="number" style="font-size: 12pt;">0</span>], [x], [v]
+    t = <span class="number" style="font-size: 12pt;">0.0</span>
+
+    <span class="keyword" style="font-size: 12pt;">while</span> t &lt; t_max:
+        <span class="comment" style="font-size: 12pt;"># Force: spring + linear damping</span>
+        a = -(k / m) * x - (b_damp / m) * v
+
+        <span class="comment" style="font-size: 12pt;"># Euler-Cromer</span>
+        v = v + a * dt
+        x = x + v * dt
+        t += dt
+        ts.append(t); xs.append(x); vs.append(v)
+
+    <span class="keyword" style="font-size: 12pt;">return</span> np.array(ts), np.array(xs), np.array(vs)
+
+<span class="comment" style="font-size: 12pt;"># ─── Compare three damping regimes ────────────────────────────</span>
+fig, axes = plt.subplots(<span class="number" style="font-size: 12pt;">2</span>, <span class="number" style="font-size: 12pt;">1</span>, figsize=(<span class="number" style="font-size: 12pt;">12</span>, <span class="number" style="font-size: 12pt;">8</span>))
+
+regimes = [
+    (<span class="number" style="font-size: 12pt;">0.1</span>,  <span class="string" style="font-size: 12pt;">'Underdamped (β = 0.1)'</span>,   <span class="string" style="font-size: 12pt;">'b'</span>),
+    (omega0, <span class="string" style="font-size: 12pt;">'Critically damped (β = ω₀)'</span>, <span class="string" style="font-size: 12pt;">'g'</span>),
+    (<span class="number" style="font-size: 12pt;">3.0</span>,  <span class="string" style="font-size: 12pt;">'Overdamped (β = 3.0)'</span>,     <span class="string" style="font-size: 12pt;">'r'</span>),
+]
+
+<span class="keyword" style="font-size: 12pt;">for</span> beta, label, color <span class="keyword" style="font-size: 12pt;">in</span> regimes:
+    t, x, v = simulate_damped_sho(beta)
+    axes[<span class="number" style="font-size: 12pt;">0</span>].plot(t, x, color=color, label=label, linewidth=<span class="number" style="font-size: 12pt;">1.5</span>)
+    axes[<span class="number" style="font-size: 12pt;">1</span>].plot(x, v, color=color, label=label, linewidth=<span class="number" style="font-size: 12pt;">0.8</span>, alpha=<span class="number" style="font-size: 12pt;">0.8</span>)
+
+<span class="comment" style="font-size: 12pt;"># x(t) plot</span>
+axes[<span class="number" style="font-size: 12pt;">0</span>].set_xlabel(<span class="string" style="font-size: 12pt;">'Time (s)'</span>); axes[<span class="number" style="font-size: 12pt;">0</span>].set_ylabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].set_title(<span class="string" style="font-size: 12pt;">'Damped Oscillator: x(t) for Three Regimes'</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].legend(); axes[<span class="number" style="font-size: 12pt;">0</span>].grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+axes[<span class="number" style="font-size: 12pt;">0</span>].axhline(y=<span class="number" style="font-size: 12pt;">0</span>, color=<span class="string" style="font-size: 12pt;">'k'</span>, alpha=<span class="number" style="font-size: 12pt;">0.2</span>)
+
+<span class="comment" style="font-size: 12pt;"># Phase portrait</span>
+axes[<span class="number" style="font-size: 12pt;">1</span>].set_xlabel(<span class="string" style="font-size: 12pt;">'x (m)'</span>); axes[<span class="number" style="font-size: 12pt;">1</span>].set_ylabel(<span class="string" style="font-size: 12pt;">'v (m/s)'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].set_title(<span class="string" style="font-size: 12pt;">'Damped Oscillator: Phase Space'</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].legend(); axes[<span class="number" style="font-size: 12pt;">1</span>].grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+axes[<span class="number" style="font-size: 12pt;">1</span>].plot(<span class="number" style="font-size: 12pt;">0</span>, <span class="number" style="font-size: 12pt;">0</span>, <span class="string" style="font-size: 12pt;">'k+'</span>, markersize=<span class="number" style="font-size: 12pt;">15</span>, markeredgewidth=<span class="number" style="font-size: 12pt;">2</span>)  <span class="comment" style="font-size: 12pt;"># equilibrium point</span>
+
+plt.tight_layout()
+plt.show()
+</pre>
+
+<div class="physics-note">
+  <strong>🔬 Physics connection:</strong> In phase space, damping turns the ellipse into an inward spiral converging on the origin (equilibrium). The underdamped case spirals inward; the overdamped case crawls along the x-axis toward zero. The critically damped case reaches the origin fastest. These are qualitatively different behaviors produced by a single parameter, this is why physicists care about phase portraits.
+</div>
+
+<div class="try-it">
+  <strong>🧪 Try it:</strong> Track the total energy E = ½kx² + ½mv² for the damped oscillator. Does it decrease over time? Plot E(t) for all three damping regimes on the same axes. Which regime loses energy fastest initially? Which loses it most slowly?
+</div>
+
+<!-- ============================================================ -->
+<h2>5 &nbsp; Driven Oscillations and Resonance</h2>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">5.1 &nbsp; The physics</h3>
+
+<p>Now add a periodic driving force:</p>
+
+<div class="eq">F = −kx − bv + F₀ cos(ω<sub>d</sub> t)</div>
+
+<p>where F₀ is the driving amplitude and ω<sub style="font-size: 12pt;">d</sub> is the driving frequency. Taylor 
+sections 5.5 - 5.6 show that after transients die out, the system oscillates at the <em>driving</em> frequency ω<sub style="font-size: 12pt;">d</sub>, with an amplitude that depends on how close ω<sub style="font-size: 12pt;">d</sub> is to ω₀.</p>
+
+<p>When ω<sub style="font-size: 12pt;">d</sub> ≈ ω₀ (and damping is small), the amplitude becomes very large. This is <strong>resonance</strong>, the most dramatic phenomenon in oscillatory physics.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">5.2 &nbsp; In code</h3>
+
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">simulate_driven_sho</span>(omega_d, F0, beta, dt=<span class="number" style="font-size: 12pt;">0.02</span>, t_max=<span class="number" style="font-size: 12pt;">80.0</span>):
+    <span class="string" style="font-size: 12pt;">"""Simulate driven, damped SHO with Euler-Cromer."""</span>
+    x, v = <span class="number" style="font-size: 12pt;">0.0</span>, <span class="number" style="font-size: 12pt;">0.0</span>  <span class="comment" style="font-size: 12pt;"># start at rest — watch transients build</span>
+    b_damp = <span class="number" style="font-size: 12pt;">2</span> * m * beta
+    ts, xs = [<span class="number" style="font-size: 12pt;">0</span>], [x]
+    t = <span class="number" style="font-size: 12pt;">0.0</span>
+
+    <span class="keyword" style="font-size: 12pt;">while</span> t &lt; t_max:
+        <span class="comment" style="font-size: 12pt;"># Force: spring + damping + driving</span>
+        a = -(k/m)*x - (b_damp/m)*v + (F0/m)*np.cos(omega_d * t)
+
+        v = v + a * dt
+        x = x + v * dt
+        t += dt
+        ts.append(t); xs.append(x)
+
+    <span class="keyword" style="font-size: 12pt;">return</span> np.array(ts), np.array(xs)
+</pre>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">5.3 &nbsp; Sweeping the driving frequency</h3>
+
+<p>The real power of numerical methods: scan across many driving frequencies and measure the steady-state amplitude at each one. This produces a <strong>resonance curve</strong>.</p>
+
+<pre style="font-size: 12pt;">beta = <span class="number" style="font-size: 12pt;">0.1</span>   <span class="comment" style="font-size: 12pt;"># light damping</span>
+F0 = <span class="number" style="font-size: 12pt;">1.0</span>     <span class="comment" style="font-size: 12pt;"># driving amplitude</span>
+
+omega_values = np.linspace(<span class="number" style="font-size: 12pt;">0.2</span>, <span class="number" style="font-size: 12pt;">2.0</span>, <span class="number" style="font-size: 12pt;">80</span>)
+amplitudes = []
+
+<span class="keyword" style="font-size: 12pt;">for</span> omega_d <span class="keyword" style="font-size: 12pt;">in</span> omega_values:
+    t, x = simulate_driven_sho(omega_d, F0, beta, dt=<span class="number" style="font-size: 12pt;">0.01</span>, t_max=<span class="number" style="font-size: 12pt;">150.0</span>)
+    <span class="comment" style="font-size: 12pt;"># Steady-state amplitude: max of x in the last 20% of the simulation</span>
+    n_start = <span class="keyword" style="font-size: 12pt;">int</span>(<span class="number" style="font-size: 12pt;">0.8</span> * len(x))
+    amp = np.max(np.abs(x[n_start:]))
+    amplitudes.append(amp)
+
+<span class="comment" style="font-size: 12pt;"># Analytical resonance curve for comparison</span>
+omega_exact = np.linspace(<span class="number" style="font-size: 12pt;">0.2</span>, <span class="number" style="font-size: 12pt;">2.0</span>, <span class="number" style="font-size: 12pt;">500</span>)
+b_val = <span class="number" style="font-size: 12pt;">2</span> * m * beta
+A_exact = (F0/m) / np.sqrt((omega0**<span class="number" style="font-size: 12pt;">2</span> - omega_exact**<span class="number" style="font-size: 12pt;">2</span>)**<span class="number" style="font-size: 12pt;">2</span> + (<span class="number" style="font-size: 12pt;">2</span>*beta*omega_exact)**<span class="number" style="font-size: 12pt;">2</span>)
+
+plt.figure(figsize=(<span class="number" style="font-size: 12pt;">10</span>, <span class="number" style="font-size: 12pt;">6</span>))
+plt.plot(omega_values, amplitudes, <span class="string" style="font-size: 12pt;">'ro'</span>, markersize=<span class="number" style="font-size: 12pt;">5</span>, label=<span class="string" style="font-size: 12pt;">'Simulation'</span>)
+plt.plot(omega_exact, A_exact, <span class="string" style="font-size: 12pt;">'b-'</span>, linewidth=<span class="number" style="font-size: 12pt;">2</span>, label=<span class="string" style="font-size: 12pt;">'Analytical'</span>, alpha=<span class="number" style="font-size: 12pt;">0.7</span>)
+plt.axvline(x=omega0, color=<span class="string" style="font-size: 12pt;">'gray'</span>, linestyle=<span class="string" style="font-size: 12pt;">'--'</span>, alpha=<span class="number" style="font-size: 12pt;">0.5</span>, label=<span class="string" style="font-size: 12pt;">'ω₀'</span>)
+plt.xlabel(<span class="string" style="font-size: 12pt;">'Driving Frequency ω_d (rad/s)'</span>, fontsize=<span class="number" style="font-size: 12pt;">12</span>)
+plt.ylabel(<span class="string" style="font-size: 12pt;">'Steady-State Amplitude (m)'</span>, fontsize=<span class="number" style="font-size: 12pt;">12</span>)
+plt.title(<span class="string" style="font-size: 12pt;">'Resonance Curve: Driven Damped Oscillator'</span>, fontsize=<span class="number" style="font-size: 12pt;">14</span>)
+plt.legend(fontsize=<span class="number" style="font-size: 12pt;">11</span>)
+plt.grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+plt.tight_layout()
+plt.show()
+</pre>
+
+<div class="key-idea">
+  <strong>💡 Key Idea:</strong> You just computed an entire resonance curve, something that would be a painful analytical exercise, by running a loop. This is the essence of computational physics: use the computer to explore parameter space systematically. You can answer questions like "what happens if I double the damping?" or "how does the peak shift if the spring constant changes?" in seconds.
+</div>
+
+<div class="try-it">
+  <strong>🧪 Try it:</strong> Run the resonance sweep for three different damping values: β = 0.05, 0.1, and 0.3. Plot all three resonance curves on the same axes. What happens to (1) the peak height, (2) the peak width, and (3) the peak location as damping increases? Taylor 
+	section 5.6 discusses all three effects, compare your numerical results to the analytical predictions.
+</div>
+
+<!-- ============================================================ -->
+<h2>6 &nbsp; The Nonlinear Pendulum: Beyond Small Angles</h2>
+
+<p>The simple pendulum equation is:</p>
+
+<div class="eq">α = −(g/L) sin(θ)</div>
+
+<p>If you approximate sin(θ) ≈ θ (small angles), this reduces to the SHO. But for large angles, the full sin(θ) makes the equation <em>nonlinear</em>, and there's no closed-form solution. This is another place where numerical methods shine.</p>
+
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">def</span> <span class="function" style="font-size: 12pt;">simulate_pendulum</span>(theta0_deg, dt=<span class="number" style="font-size: 12pt;">0.01</span>, n_periods=<span class="number" style="font-size: 12pt;">5</span>):
+    <span class="string" style="font-size: 12pt;">"""Simulate nonlinear pendulum with Euler-Cromer."""</span>
+    g_val = <span class="number" style="font-size: 12pt;">9.81</span>
+    L = <span class="number" style="font-size: 12pt;">1.0</span>   <span class="comment" style="font-size: 12pt;"># length (m)</span>
+    omega0_pend = np.sqrt(g_val / L)
+    T_small = <span class="number" style="font-size: 12pt;">2</span> * np.pi / omega0_pend  <span class="comment" style="font-size: 12pt;"># small-angle period</span>
+
+    theta = np.radians(theta0_deg)
+    omega_val = <span class="number" style="font-size: 12pt;">0.0</span>
+    ts, thetas, omegas = [<span class="number" style="font-size: 12pt;">0</span>], [theta], [omega_val]
+    t = <span class="number" style="font-size: 12pt;">0.0</span>
+
+    <span class="keyword" style="font-size: 12pt;">while</span> t &lt; n_periods * T_small:
+        alpha = -(g_val / L) * np.sin(theta)  <span class="comment" style="font-size: 12pt;"># nonlinear!</span>
+        omega_val += alpha * dt
+        theta += omega_val * dt
+        t += dt
+        ts.append(t); thetas.append(theta); omegas.append(omega_val)
+
+    <span class="keyword" style="font-size: 12pt;">return</span> np.array(ts), np.array(thetas), np.array(omegas)
+
+<span class="comment" style="font-size: 12pt;"># Compare small and large angle</span>
+fig, (ax1, ax2) = plt.subplots(<span class="number" style="font-size: 12pt;">1</span>, <span class="number" style="font-size: 12pt;">2</span>, figsize=(<span class="number" style="font-size: 12pt;">14</span>, <span class="number" style="font-size: 12pt;">5</span>))
+
+<span class="keyword" style="font-size: 12pt;">for</span> angle, color, label <span class="keyword" style="font-size: 12pt;">in</span> [(<span class="number" style="font-size: 12pt;">10</span>, <span class="string" style="font-size: 12pt;">'b'</span>, <span class="string" style="font-size: 12pt;">'10°'</span>), (<span class="number" style="font-size: 12pt;">45</span>, <span class="string" style="font-size: 12pt;">'g'</span>, <span class="string" style="font-size: 12pt;">'45°'</span>), (<span class="number" style="font-size: 12pt;">90</span>, <span class="string" style="font-size: 12pt;">'r'</span>, <span class="string" style="font-size: 12pt;">'90°'</span>), (<span class="number" style="font-size: 12pt;">170</span>, <span class="string" style="font-size: 12pt;">'purple'</span>, <span class="string" style="font-size: 12pt;">'170°'</span>)]:
+    t, theta, omega_val = simulate_pendulum(angle)
+    ax1.plot(t, np.degrees(theta), color=color, label=label)
+    ax2.plot(theta, omega_val, color=color, label=label, linewidth=<span class="number" style="font-size: 12pt;">0.8</span>)
+
+ax1.set_xlabel(<span class="string" style="font-size: 12pt;">'Time (s)'</span>); ax1.set_ylabel(<span class="string" style="font-size: 12pt;">'θ (degrees)'</span>)
+ax1.set_title(<span class="string" style="font-size: 12pt;">'Nonlinear Pendulum: θ(t)'</span>)
+ax1.legend(); ax1.grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+ax2.set_xlabel(<span class="string" style="font-size: 12pt;">'θ (rad)'</span>); ax2.set_ylabel(<span class="string" style="font-size: 12pt;">'ω (rad/s)'</span>)
+ax2.set_title(<span class="string" style="font-size: 12pt;">'Nonlinear Pendulum: Phase Space'</span>)
+ax2.legend(); ax2.grid(<span class="keyword" style="font-size: 12pt;">True</span>, alpha=<span class="number" style="font-size: 12pt;">0.3</span>)
+
+plt.tight_layout()
+plt.show()
+</pre>
+
+<div class="physics-note">
+  <strong>🔬 Physics connection:</strong> Notice two things in the x(t) plot: (1) the period gets <em>longer</em> for larger amplitudes — the SHO's amplitude-independent period is an approximation that breaks down; (2) for 170°, the motion is visibly non-sinusoidal. In phase space, the small-angle trajectories are nearly circular, while the large-angle trajectories are distorted. At 180° (the separatrix), the pendulum would balance precariously, above that energy, it swings over the top.
+</div>
+
+<!-- ============================================================ -->
+<h2>7 &nbsp; Summary: Your Growing Toolkit</h2>
+
+<p>After three weeks, here's what you can do:</p>
+
+<table><caption>Summary of skills and topics learned across different weeks in the course.</caption>
+  <thead>
+    <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Capability</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Where You Learned It</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Simulate any 1D or 2D system from Newton's laws</td><td>Week 1</td></tr>
+    <tr><td>Track energy as a validation diagnostic</td><td>Week 2</td></tr>
+    <tr><td>Choose between Euler and Euler-Cromer and know <em>why</em></td><td>Week 2</td></tr>
+    <tr><td>Run convergence tests to quantify numerical accuracy</td><td>Week 2</td></tr>
+    <tr><td>Construct and interpret phase-space portraits</td><td>Week 3</td></tr>
+    <tr><td>Model damped and driven oscillators</td><td>Week 3</td></tr>
+    <tr><td>Sweep parameters to map out physical phenomena (resonance)</td><td>Week 3</td></tr>
+    <tr><td>Handle nonlinear forces (pendulum, quadratic drag)</td><td>Weeks 1 &amp; 3</td></tr>
+  </tbody>
+</table>
+
+<p>You're ready for Block 2, where you'll start building <em>multi-body</em> systems, collisions, orbits, and eventually a modular physics engine.</p>
+
+<!-- ============================================================ -->
+<h2>8 &nbsp; Block 1 Checkpoint</h2>
+
+<div class="checkpoint-box">
+  <h3 style="color: #000000 !important; background-color: #fff0e6 !important;">🏁 Block 1 Checkpoint: "Choose Your Oscillator"</h3>
+
+  <p>This is your first mini-project. Choose a 1D physical system, model it numerically, and validate your simulation. This is also your first experience with <strong>peer review</strong>.</p>
+
+  <h4>Requirements</h4>
+  <ol>
+    <li><strong>Choose a system</strong> that oscillates (or could oscillate). It can be from Taylor, from your own experience, or from a physics curiosity. Examples:
+      <ul>
+        <li>A bungee jumper (spring + gravity + one-sided contact)</li>
+        <li>A car suspension hitting a speed bump (driven oscillator with an impulse)</li>
+        <li>A ball bouncing in a potential well (custom potential function)</li>
+        <li>A magnetic pendulum near a magnet (nonlinear restoring force)</li>
+        <li>A mass on a spring that can detach (spring breaks above a critical stretch)</li>
+      </ul>
+    </li>
+    <li><strong>Implement</strong> the simulation in a Jupyter notebook using Euler-Cromer 
+	(AI can help you to produce a well-structured simulation)</li>
+    <li><strong>Validate</strong> with at least two methods from your toolkit: energy tracking, convergence test, comparison to an exact solution (if one exists), symmetry check, or work-energy theorem</li>
+    <li><strong>Present</strong> your results with:
+      <ul>
+        <li>An x(t) plot</li>
+        <li>A phase-space plot</li>
+        <li>An energy plot</li>
+        <li>A brief written explanation (200 - 400 words) of what the system is, what the physics predicts, and whether your simulation agrees</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h4>Rubric Preview</h4>
+  <table><caption>Criteria for evaluating physics modeling projects, including aspects of correctness, implementation quality, validation methods, presentation clarity, and peer review feedback.</caption>
+    <thead>
+      <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Category</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Points</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">What We're Looking For</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Physics model</td><td>25</td><td>Forces are correct; equation of motion is right</td></tr>
+      <tr><td>Implementation</td><td>25</td><td>Code runs, is readable, uses functions</td></tr>
+      <tr><td>Validation</td><td>25</td><td>At least 2 validation methods applied and discussed</td></tr>
+      <tr><td>Presentation</td><td>15</td><td>Plots labeled, explanation clear</td></tr>
+      <tr><td>Peer review quality</td><td>10</td><td>Thoughtful, specific feedback to peers</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Due:</strong> End of Week 3. </p>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="concept-box">
+  <strong>📋 This week's deliverables:</strong>
+  <ul>
+    <li><strong>Lab 3:</strong> SHO, damped oscillator, and driven oscillator simulations with phase-space plots</li>
+    <li><strong>Discussion:</strong> "Resonance in the Real World" — find a real example of resonance, model it, share your results</li>
+    <li><strong>Block 1 Checkpoint:</strong> Your chosen 1D system (see above)</li>
+    <li><strong>Journal:</strong> What has been the hardest concept so far? What clicked this week?</li>
+  </ul>
+</div>
+
+
+
+</body></html>

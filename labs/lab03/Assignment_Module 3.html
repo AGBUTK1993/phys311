@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lab 3 — Oscillator Simulation</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    color: #2d3b45;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  h1 { color: #ff8200; border-bottom: 3px solid #ff8200; padding-bottom: 10px; }
+  h2 { color: #58595b; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-top: 40px; }
+  h3 { color: #ff8200; margin-top: 28px; }
+  h4 { color: #58595b; margin-top: 20px; }
+  .concept-box {
+    background-color: #fff3cd;
+    border-left: 4px solid #ff8200;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .key-idea {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .physics-note {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .warning-box {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .try-it {
+    background-color: #e8d5f5;
+    border-left: 4px solid #6f42c1;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .bonus-box {
+    background-color: #fff8e1;
+    border: 2px dashed #ff8200;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .rubric-box {
+    background-color: #f0f7ff;
+    border: 2px solid #b8d4f0;
+    padding: 20px;
+    margin: 25px 0;
+    border-radius: 8px;
+  }
+  .deliverable-box {
+    background-color: #e8f5e9;
+    border: 2px solid #4caf50;
+    padding: 20px;
+    margin: 25px 0;
+    border-radius: 8px;
+  }
+  code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.88em;
+    line-height: 1.55;
+  }
+  pre .comment { color: #6a9955; }
+  pre .keyword { color: #569cd6; }
+  pre .string { color: #ce9178; }
+  pre .number { color: #b5cea8; }
+  pre .function { color: #dcdcaa; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+  th { background-color: #ff8200; color: white; }
+  tr:nth-child(even) { background-color: #f9f9f9; }
+  details { margin: 12px 0; padding: 10px 15px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; }
+  details summary { cursor: pointer; font-weight: bold; color: #ff8200; }
+  .eq { text-align: center; margin: 15px 0; font-size: 1.1em; font-style: italic; }
+  a { color: #006c93; }
+  .breadcrumb { color: #888; font-size: 0.9em; margin-bottom: 5px; }
+  .nav-box { display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #ddd; margin-top: 40px; }
+  .nav-box a { color: #ff8200; font-weight: bold; text-decoration: none; }
+  .nav-box a:hover { text-decoration: underline; }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+    margin-bottom: 10px;
+  }
+  .part-label {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+  }
+  .part-a { background-color: #d4edda; color: #155724; }
+  .part-b { background-color: #d1ecf1; color: #0c5460; }
+  .part-c { background-color: #e8d5f5; color: #4a1a6b; }
+  ul.checklist { list-style: none; padding-left: 5px; }
+  ul.checklist li { padding: 4px 0; }
+  ul.checklist li::before { content: "\2610"; font-size: 1.15em }
+</style>
+</head>
+<body>
+
+<h1 style="color: #000000 !important; background-color: #ffffff !important;">Code lab 3 — Oscillator Simulation</h1>
+
+<div class="concept-box">
+  <strong>📋 Lab Overview</strong><br>
+  <strong>Due:</strong> End of Week 3 (see Canvas calendar for exact date/time)<br>
+  <strong>Submit:</strong> Jupyter notebook (<code style="font-size: 12pt;">lab03_oscillator.ipynb</code>) via Canvas<br>
+  <strong>Also:</strong> Commit and push to your <code style="font-size: 12pt;">phys311</code> GitHub repo under <code style="font-size: 12pt;">labs/lab03/</code><br>
+  <strong>Points:</strong> 100 (+ up to 10 bonus)<br>
+  <strong>Estimated time:</strong> 4–5 hours
+</div>
+
+<p>The harmonic oscillator is the most important system in physics — and it's also the one that most ruthlessly exposes a bad integrator. This week you'll simulate a mass on a spring, watch the standard Euler method fail catastrophically, and discover why Euler-Cromer succeeds. Then you'll add damping and driving to explore two of the richest phenomena in mechanics: decay and resonance.</p>
+
+<p>You'll also meet a new diagnostic tool: the <strong>phase-space portrait</strong>. Alongside energy tracking from Lab 2, phase space gives you a second, independent way to see whether your simulation is telling the truth.</p>
+
+<div class="key-idea">
+  <strong>💡 The big idea this week:</strong> A closed curve in phase space means a conserved quantity. When your undamped oscillator traces a clean ellipse that never spirals in or out, that geometry <em>is</em> energy conservation made visible. When Euler's ellipse spirals outward, you're watching numerical energy get manufactured in real time.
+</div>
+
+<!-- ============================================================ -->
+<h2>Before You Start</h2>
+
+<p>Make sure you have completed:</p>
+<ul class="checklist">
+  <li>Lab 2 — Energy-Tracking Projectile (you'll reuse your energy-tracking and convergence-test habits)</li>
+  <li>Week 3 Lesson: <em>Oscillations &amp; Phase Space</em> (read the full lesson page)</li>
+  <li>Taylor, Chapter 5: sections 5.1–5.2 (Hooke's law, SHO), 5.4 (damped oscillations), 5.5–5.6 (driven oscillations and resonance)</li>
+</ul>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">Getting Started</h3>
+
+<ol>
+  <li>Create the folder <code style="font-size: 12pt;">labs/lab03/</code> in your <code style="font-size: 12pt;">phys311</code> repository</li>
+  <li>Create a new Jupyter notebook called <code style="font-size: 12pt;">lab03_oscillator.ipynb</code></li>
+  <li>Start with a Markdown cell containing your name, the date, and "Lab 3 — Oscillator Simulation"</li>
+  <li>Import your tools:
+<pre style="font-size: 12pt;"><span class="keyword" style="font-size: 12pt;">import</span> numpy <span class="keyword" style="font-size: 12pt;">as</span> np
+<span class="keyword" style="font-size: 12pt;">import</span> matplotlib.pyplot <span class="keyword" style="font-size: 12pt;">as</span> plt
+</pre>
+  </li>
+</ol>
+
+<div class="physics-note">
+  <strong>🔬 Bring your integrator forward.</strong> You built a clean <code style="font-size: 12pt;">simulate(method, dt)</code> function in Lab 2 that could swap between Euler and Euler-Cromer. Adapt that same pattern here — you'll change only the force law (from gravity to <code style="font-size: 12pt;">-k*x/m</code>). If your Lab 2 code was well organized, this lab starts fast.
+</div>
+
+<!-- ============================================================ -->
+<!-- PART A -->
+<!-- ============================================================ -->
+
+<h2>Part A — The Simple Harmonic Oscillator (25 points)</h2>
+<span class="part-label part-a" style="font-size: 12pt;">GUIDED — Follow the Lesson</span>
+
+<p>Start with a mass on a frictionless spring: the only force is the restoring force <em>F</em> = −<em>kx</em>. This is the purest test case in mechanics — and it has an exact solution you can check against.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">The Physics</h3>
+
+<div class="eq">F = −kx &nbsp;&nbsp; → &nbsp;&nbsp; a = −(k/m) x = −ω₀² x</div>
+<div class="eq">ω₀ = √(k/m) &nbsp;&nbsp;&nbsp; T = 2π/ω₀</div>
+<div class="eq">x(t) = A cos(ω₀t + φ) &nbsp;&nbsp; (exact solution)</div>
+
+<p>For initial conditions <em>x</em>(0) = <em>A</em>, <em>v</em>(0) = 0, the exact solution is simply <em>x</em>(<em>t</em>) = <em>A</em> cos(ω₀<em>t</em>) and <em>v</em>(<em>t</em>) = −<em>A</em>ω₀ sin(ω₀<em>t</em>).</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">What to do</h3>
+
+<ol>
+  <li><strong>Write a function</strong> <code style="font-size: 12pt;">simulate_sho(method, dt, n_periods=10)</code> that simulates the SHO using either <code style="font-size: 12pt;">'euler'</code> or <code style="font-size: 12pt;">'euler-cromer'</code>. Use <code style="font-size: 12pt;">k = 1.0</code>, <code style="font-size: 12pt;">m = 1.0</code>, <code style="font-size: 12pt;">x0 = 1.0</code>, <code style="font-size: 12pt;">v0 = 0.0</code>. Store <code style="font-size: 12pt;">t</code>, <code style="font-size: 12pt;">x</code>, <code style="font-size: 12pt;">v</code>, and total energy <em>E</em> = ½<em>kx</em>² + ½<em>mv</em>² at each step.</li>
+  <li><strong>Run both methods</strong> for 10 periods with <code style="font-size: 12pt;">dt = 0.05</code>.</li>
+  <li><strong>Plot x(t) for both methods</strong> on the same axes, overlaid with the exact solution <em>A</em> cos(ω₀<em>t</em>). </li>
+  <li><strong>Plot total energy vs. time</strong> for both methods on the same axes.</li>
+  <li><strong>Write 2–3 sentences</strong>: What happens to the Euler solution's amplitude over 10 periods? What happens to its energy? Does Euler-Cromer show the same problem?</li>
+</ol>
+
+<div class="try-it">
+  <strong>💡 What you should see:</strong> The Euler amplitude grows visibly with each swing, and its energy climbs steadily upward — the oscillator is gaining energy from nowhere. Euler-Cromer holds its amplitude and keeps energy bounded (it wobbles slightly but never drifts). This is the same lesson as Lab 2, but far more dramatic because the error accumulates over every oscillation.
+</div>
+
+<details>
+  <summary style="color: #000000 !important; background-color: #f9f9f9 !important;">💡 Hint: the two integrators, side by side</summary>
+<pre style="font-size: 12pt;">a = -(k / m) * x
+
+<span class="keyword" style="font-size: 12pt;">if</span> method == <span class="string" style="font-size: 12pt;">'euler'</span>:
+    x_new = x + v * dt      <span class="comment" style="font-size: 12pt;"># uses OLD velocity</span>
+    v_new = v + a * dt
+    x, v = x_new, v_new
+<span class="keyword" style="font-size: 12pt;">elif</span> method == <span class="string" style="font-size: 12pt;">'euler-cromer'</span>:
+    v = v + a * dt          <span class="comment" style="font-size: 12pt;"># update velocity FIRST</span>
+    x = x + v * dt          <span class="comment" style="font-size: 12pt;"># then use the NEW velocity</span>
+</pre>
+  <p>The only difference is whether the position update uses the old or the newly updated velocity. That one line is the difference between a stable oscillator and one that explodes.</p>
+</details>
+
+<!-- ============================================================ -->
+<!-- PART B -->
+<!-- ============================================================ -->
+
+<h2>Part B — Phase Space &amp; Damped Oscillations (35 points)</h2>
+<span class="part-label part-b" style="font-size: 12pt;">GUIDED → INDEPENDENT</span>
+
+<p>Now you'll add a new visualization tool and a new piece of physics: friction.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">B.1 — Phase-space portraits</h3>
+
+<p>A <strong>phase-space plot</strong> shows velocity <em>v</em> on the vertical axis against position <em>x</em> on the horizontal axis, with time as an implied parameter along the curve. For the undamped SHO, this is a closed ellipse — the system returns to the same (<em>x</em>, <em>v</em>) state every period.</p>
+
+<ol>
+  <li><strong>Make a phase-space plot</strong> (<em>v</em> vs. <em>x</em>) for both Euler and Euler-Cromer from Part A, on the same axes.</li>
+  <li><strong>Write 1–2 sentences</strong>: What does the Euler curve do? What does the Euler-Cromer curve do? Connect the shape to what you saw in the energy plot.</li>
+</ol>
+
+<div class="key-idea">
+  <strong>💡 Reading phase space:</strong> A closed loop = periodic motion with conserved energy. A curve spiraling <em>outward</em> = energy growing (Euler). A curve spiraling <em>inward</em> = energy decaying. You'll use this shape-reading skill for the rest of the course.
+</div>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">B.2 — Add damping</h3>
+
+<p>Real oscillators lose energy. Add a linear damping force proportional to velocity:</p>
+
+<div class="eq">F = −kx − bv &nbsp;&nbsp; → &nbsp;&nbsp; a = −(k/m) x − (b/m) v</div>
+
+<p>Define the damping ratio ζ = <em>b</em> / (2√(<em>km</em>)). The three regimes are:</p>
+
+<table><caption>Summary of damping regimes and their effects on system behavior based on damping ratio ζ.</caption>
+  <thead>
+    <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Regime</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Condition</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Underdamped</td><td>ζ &lt; 1</td><td>Oscillates with decaying amplitude</td></tr>
+    <tr><td>Critically damped</td><td>ζ = 1</td><td>Returns to zero fastest, no oscillation</td></tr>
+    <tr><td>Overdamped</td><td>ζ &gt; 1</td><td>Returns to zero slowly, no oscillation</td></tr>
+  </tbody>
+</table>
+
+<ol>
+  <li><strong>Extend your simulator</strong> to include the damping term. Use Euler-Cromer from here on (you've proven it's the trustworthy one).</li>
+  <li><strong>Simulate all three regimes</strong>: pick <em>b</em> values that give ζ ≈ 0.1 (underdamped), ζ = 1 (critical), and ζ ≈ 2 (overdamped). Keep <em>k</em> = <em>m</em> = 1.</li>
+  <li><strong>Make two plots:</strong> (a) <em>x</em>(<em>t</em>) for all three regimes on the same axes; (b) phase-space portraits for all three on the same axes.</li>
+  <li><strong>Write 2–3 sentences</strong> interpreting the phase-space plot: how does each regime spiral toward the origin differently?</li>
+</ol>
+
+<div class="try-it">
+  <strong>💡 Try it:</strong> For the underdamped case, overlay the theoretical decay envelope <em>A</em>e<sup style="font-size: 12pt;">−γt</sup> (where γ = <em>b</em>/2<em>m</em>) on your <em>x</em>(<em>t</em>) plot. Does your simulation's amplitude follow it?
+</div>
+
+<details>
+  <summary style="color: #000000 !important; background-color: #f9f9f9 !important;">💡 Hint: choosing b for each regime</summary>
+  <p>With <em>k</em> = <em>m</em> = 1, the critical value is <em>b</em> = 2√(<em>km</em>) = 2. So:</p>
+  <ul>
+    <li>Underdamped ζ = 0.1 → <em>b</em> = 0.2</li>
+    <li>Critical ζ = 1 → <em>b</em> = 2</li>
+    <li>Overdamped ζ = 2 → <em>b</em> = 4</li>
+  </ul>
+</details>
+
+<!-- ============================================================ -->
+<!-- PART C -->
+<!-- ============================================================ -->
+
+<h2>Part C — Driven Oscillations &amp; Resonance (40 points)</h2>
+<span class="part-label part-c" style="font-size: 12pt;">INDEPENDENT</span>
+
+<p>Now add a periodic driving force and explore resonance — the phenomenon behind everything from radio tuning to the collapse of bridges.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">The Physics</h3>
+
+<div class="eq">F = −kx − bv + F₀ cos(ω<sub>d</sub> t)</div>
+<div class="eq">a = −(k/m) x − (b/m) v + (F₀/m) cos(ω<sub>d</sub> t)</div>
+
+<p>After transients die out, the system oscillates at the <em>driving</em> frequency ω<sub style="font-size: 12pt;">d</sub>, not its natural frequency ω₀. The steady-state amplitude depends sharply on how close ω<sub style="font-size: 12pt;">d</sub> is to ω₀. That peak is <strong>resonance</strong>.</p>
+
+<h3 style="color: #000000 !important; background-color: #ffffff !important;">What to do</h3>
+
+<ol>
+  <li><strong>Add the driving term</strong> to your simulator. Use light damping (<em>b</em> = 0.2, so ζ = 0.1), <em>F</em>₀ = 1.0, <em>k</em> = <em>m</em> = 1 (so ω₀ = 1).</li>
+  <li><strong>Show the transient → steady state</strong>: simulate at ω<sub style="font-size: 12pt;">d</sub> = ω₀ = 1 for many periods and plot <em>x</em>(<em>t</em>). Point out where the transient ends and steady state begins.</li>
+  <li><strong>Build a resonance curve.</strong> Sweep ω<sub style="font-size: 12pt;">d</sub> from 0.2 to 2.0 (at least 30 values). For each, run long enough to reach steady state, then measure the steady-state amplitude (e.g., the max of |<em>x</em>| over the final few periods). Plot amplitude vs. ω<sub style="font-size: 12pt;">d</sub>.</li>
+  <li><strong>Identify the peak.</strong> At what ω<sub style="font-size: 12pt;">d</sub> does the amplitude peak? How does it compare to ω₀ = 1?</li>
+  <li><strong>Write 3–4 sentences</strong> interpreting the resonance curve: why does the amplitude peak near ω₀? What would happen to the peak height if you reduced the damping?</li>
+</ol>
+
+<div class="try-it">
+  <strong>💡 Try it:</strong> Overlay two or three resonance curves for different damping values (e.g., <em>b</em> = 0.1, 0.2, 0.5). Watch the peak grow taller and sharper as damping decreases — that sharpness is the "quality factor" <em>Q</em> of the oscillator.
+</div>
+
+<div class="warning-box">
+  <strong>⚠️ Watch your transient.</strong> If you measure amplitude too early, you'll capture the transient, not the steady state, and your resonance curve will look noisy. Discard the first several periods before measuring. When in doubt, plot <em>x</em>(<em>t</em>) at a single ω<sub style="font-size: 12pt;">d</sub> to confirm it has settled.
+</div>
+
+<details>
+  <summary style="color: #000000 !important; background-color: #f9f9f9 !important;">💡 Hint: measuring steady-state amplitude</summary>
+<pre style="font-size: 12pt;"><span class="comment" style="font-size: 12pt;"># After simulating, keep only the last ~30% of the run</span>
+n = len(x)
+tail = x[<span class="keyword" style="font-size: 12pt;">int</span>(<span class="number" style="font-size: 12pt;">0.7</span> * n):]
+amplitude = np.max(np.abs(tail))
+</pre>
+  <p>This throws away the transient and measures the settled oscillation. Make sure your total run time is long enough (many periods) for the transient to actually die out at light damping.</p>
+</details>
+
+<!-- ============================================================ -->
+<!-- BONUS -->
+<!-- ============================================================ -->
+
+<h2>Bonus Challenge (up to 10 points)</h2>
+
+<div class="bonus-box">
+  <strong>⭐ The nonlinear pendulum: when the textbook formula breaks</strong>
+  <p>Everything above assumed the small-angle approximation, where a pendulum is a perfect SHO with period <em>T</em> = 2π√(<em>L</em>/<em>g</em>), independent of amplitude. But the <em>real</em> pendulum obeys:</p>
+  <div class="eq">θ″ = −(g/L) sinθ</div>
+  <p>For large swings, sinθ ≠ θ, and the period grows with amplitude — something the linear formula completely misses.</p>
+  <ol>
+    <li>Simulate the full nonlinear pendulum (with <code style="font-size: 12pt;">sin(theta)</code>, not <code style="font-size: 12pt;">theta</code>) using Euler-Cromer.</li>
+    <li>Measure the period numerically for small amplitude (e.g., 5°) and confirm it matches <em>T</em> = 2π√(<em>L</em>/<em>g</em>).</li>
+    <li>Now measure the period for large amplitudes (e.g., 30°, 90°, 150°). Plot period vs. amplitude.</li>
+    <li>Write 2–3 sentences: how much does the period grow? At what amplitude does the small-angle approximation break down by more than a few percent?</li>
+  </ol>
+  <p><em>This previews a deep theme of the course: linear approximations are convenient, but the interesting physics often lives in the nonlinear regime that only computation can reach.</em></p>
+</div>
+
+<!-- ============================================================ -->
+<!-- DELIVERABLES -->
+<!-- ============================================================ -->
+
+<div class="deliverable-box">
+  <h2 style="margin-top:0; border:none;">📦 What to Submit</h2>
+  <p>Your notebook <code style="font-size: 12pt;">lab03_oscillator.ipynb</code> should contain, clearly labeled with Markdown headers:</p>
+  <ul class="checklist">
+    <li><strong>Part A:</strong> <code style="font-size: 12pt;">simulate_sho</code> function; x(t) plot (Euler, Euler-Cromer, exact); energy vs. time plot; written interpretation</li>
+    <li><strong>Part B:</strong> phase-space plot comparing the two integrators; damped simulator; x(t) and phase-space plots for all three damping regimes; written interpretations</li>
+    <li><strong>Part C:</strong> driven simulator; transient→steady-state plot; resonance curve (amplitude vs. ω<sub style="font-size: 12pt;">d</sub>); identified peak; written interpretation</li>
+    <li><strong>Bonus (optional):</strong> nonlinear pendulum period-vs-amplitude study</li>
+    <li>Every plot has axis labels, a title, and a legend; every part ends with your written interpretation</li>
+  </ul>
+  <p style="margin-bottom:0;"><strong>Before submitting:</strong> Restart the kernel and run all cells top to bottom (<em>Kernel → Restart &amp; Run All</em>). Confirm it runs clean with no errors, then submit the <code style="font-size: 12pt;">.ipynb</code> to Canvas <em>and</em> commit &amp; push to <code style="font-size: 12pt;">labs/lab03/</code> in your repo.</p>
+</div>
+
+<div class="warning-box">
+  <strong>⚠️ The #1 avoidable point loss:</strong> submitting a notebook that doesn't run cleanly from a fresh kernel. Always do <em>Restart &amp; Run All</em> before you submit. If a cell throws an error you can't fix, leave a Markdown note explaining what you tried — partial credit is real.
+</div>
+
+<!-- ============================================================ -->
+<!-- RUBRIC -->
+<!-- ============================================================ -->
+
+<div class="rubric-box">
+  <h2 style="margin-top:0; border:none;">📝 Grading Rubric (100 points + 10 bonus)</h2>
+  <table><caption>Summary of assessment criteria for SHO and integrator comparison, phase space and damping analysis, driven oscillator and resonance study, with bonus for nonlinear pendulum simulation.</caption>
+    <thead>
+      <tr><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Component</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">Points</th><th style="color: #000000 !important; background-color: #ff8200 !important;" scope="col">What earns full marks</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Part A</strong> — SHO &amp; integrator comparison</td><td>25</td><td>Working <code style="font-size: 12pt;">simulate_sho</code>; correct x(t) and energy plots vs. exact; clear interpretation of Euler's amplitude/energy growth</td></tr>
+      <tr><td><strong>Part B</strong> — phase space &amp; damping</td><td>35</td><td>Correct phase-space portraits; all three damping regimes simulated and plotted correctly; sound interpretation of spiral behavior</td></tr>
+      <tr><td><strong>Part C</strong> — driven &amp; resonance</td><td>40</td><td>Correct driven simulator; clean resonance curve; peak identified and correctly related to ω₀; thoughtful interpretation</td></tr>
+      <tr><td><strong>Bonus</strong> — nonlinear pendulum</td><td>+10</td><td>Correct nonlinear simulation; period-vs-amplitude measured and interpreted</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-bottom:0;"><em>Note:</em> Points within each part are split roughly 70% correct code/plots, 30% written interpretation. Clear physical reasoning matters as much as working code.</p>
+</div>
+
+<div class="physics-note">
+  <strong>🔬 Looking ahead:</strong> This lab completes your numerical toolkit — you now have two independent diagnostics (energy tracking <em>and</em> phase space) and a trustworthy integrator. That's exactly what you need for the <strong>Block 1 Checkpoint</strong>, where you'll choose your own oscillating system, model it, and validate it with these tools. Start thinking now about a system you'd find interesting: a pendulum clock, a car suspension, a tuning fork, an RLC circuit, a molecular bond…
+</div>
+
+
+
+
+</body></html>
