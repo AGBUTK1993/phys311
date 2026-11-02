@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYS 311 — Lab 9</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <main>
+        <h1>Lab 9: Multi-Body Browser Simulation</h1>
+        <p>Alex Bebb — PHYS 311</p>
+
+        <p id="status">Loading JavaScript…</p>
+
+        <div class="controls">
+            <label>
+                Scene:
+                <select id="sceneSelect">
+                    <option value="box">20-ball box</option>
+                    <option value="gravity">Gravitational orbits</option>
+                    <option value="springs" selected>Spring chain</option>
+                </select>
+            </label>
+            <label>
+                Integrator:
+                <select id="integratorSelect">
+                    <option value="verlet">Velocity Verlet</option>
+                    <option value="euler-cromer">Euler–Cromer</option>
+                </select>
+            </label>
+
+            <label>
+                Restitution:
+                <input id="restitutionInput" type="range" min="0" max="1" step="0.05" value="1">
+                <span id="restitutionValue">1.00</span>
+            </label>
+            <label>
+                Balls:
+                <select id="bodyCountSelect">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                </select>
+            </label>
+
+            <button id="restartButton" type="button">Restart</button>
+            <button id="pauseButton" type="button">Pause</button>
+            <button id="seededRunButton" type="button">Seeded run</button>
+            <button id="replayButton" type="button" disabled>Replay</button>
+        </div>
+
+        <canvas id="sim" width="1000" height="650">
+            Your browser does not support HTML Canvas.
+        </canvas>
+
+        <p id="replayResults">
+            Replay test: click Seeded run to begin a reproducible box simulation.
+        </p>
+
+        <p>
+            Box performance: 2-second warm-up, then a 10-second average.
+            Keep this tab visible and leave the controls unchanged during measurement.
+        </p>
+        <pre id="performanceResults">No performance measurements yet.</pre>
+
+    </main>
+
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
