@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYS 311 — Lab 10</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./control-help.css">
+</head>
+
+<body>
+    <main>
+        <h1>Lab 10: Interactive Physics</h1>
+        <section aria-labelledby="purposeHeading">
+            <h2 id="purposeHeading">Launch, Fall, and Bounce</h2>
+
+            <p>
+                How do gravity and bounce affect a launched ball?
+                Launch a ball, compare its motion with the predicted path,
+                and explore what happens when it hits the walls.
+            </p>
+
+            <p>
+                <strong>Try it:</strong>
+                Choose the ball-box scene and “Launch a ball.”
+                Set downward gravity to 2 m/s², then press in an empty
+                part of the box, pull backward, and release.
+                Change restitution to compare nearly elastic bounces
+                with bounces that lose kinetic energy.
+            </p>
+
+            <p>
+                The dashed preview predicts free flight under gravity.
+                It ends at the box boundary and does not predict collisions
+                with other balls. Launching and dragging add energy, so
+                energy changes during interaction are not conservation tests.
+            </p>
+        </section>
+        <p>Alex Bebb — PHYS 311</p>
+
+        <p id="status">Loading JavaScript…</p>
+
+        <div class="controls">
+            <label for="sceneSelect">
+                Scene:
+                <select id="sceneSelect">
+                    <option value="box">20-ball box</option>
+                    <option value="gravity">Gravitational orbits</option>
+                    <option value="springs" selected>Spring chain</option>
+                </select>
+            </label>
+
+            <label for="integratorSelect">
+                Integrator:
+                <select id="integratorSelect">
+                    <option value="verlet">Velocity Verlet</option>
+                    <option value="euler-cromer">Euler–Cromer</option>
+                    <option value="euler">Euler</option>
+                </select>
+            </label>
+
+            <label for="restitutionInput">
+                Restitution:
+                <input id="restitutionInput" type="range" min="0" max="1" step="0.05" value="1">
+                <span id="restitutionValue">1.00</span>
+            </label>
+
+            <label for="bodyCountSelect">
+                Balls:
+                <select id="bodyCountSelect">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                </select>
+            </label>
+
+            <label for="interactionSelect">Mouse action:</label>
+            <select id="interactionSelect">
+                <option value="drag" selected>Grab with spring</option>
+                <option value="launch">Launch a ball</option>
+            </select>
+
+            <label for="durationSelect">Run duration:</label>
+            <select id="durationSelect" aria-describedby="durationHelp">
+                <option value="30">30 seconds</option>
+                <option value="60" selected>60 seconds</option>
+                <option value="120">120 seconds</option>
+                <option value="unlimited">Unlimited</option>
+            </select>
+
+            <button id="restartButton" type="button">Restart</button>
+            <button id="pauseButton" type="button">Pause</button>
+            <button id="stepButton" type="button">Single step</button>
+
+            <label for="speedInput">
+                Speed: <span id="speedValue">1.00</span>×
+            </label>
+            <input id="speedInput" type="range" min="0.25" max="2" step="0.25" value="1">
+            <button id="seededRunButton" type="button">Seeded run</button>
+            <button id="replayButton" type="button" disabled>Replay</button>
+        </div>
+
+        <p>
+            Keyboard shortcuts when no form control is focused:
+            Space = pause/resume;
+            period (.) = single step;
+            R = reset;
+            − / + = speed;
+            I = cycle integrators.
+            Use Tab to reach controls and arrow keys to adjust sliders
+            or select options.
+        </p>
+
+        <div class="controls">
+            <label for="gravityInput">
+                Downward gravity:
+                <span id="gravityValue">0.00</span> m/s²
+            </label>
+            <input id="gravityInput" type="range" min="0" max="10" step="0.1" value="0">
+
+            <label for="stiffnessInput">
+                Spring stiffness:
+                <span id="stiffnessValue">10.0</span> N/m
+            </label>
+            <input id="stiffnessInput" type="range" min="1" max="40" step="1" value="10">
+        </div>
+
+        <p>
+            Gravity and restitution apply to the ball box.
+            Spring stiffness applies to the spring chain.
+            Changing gravity or stiffness starts a new energy comparison.
+        </p>
+
+        <p>
+            Grab mode: drag an existing body with a spring.
+            Launch mode (ball box only): press on empty space inside the box,
+            pull backward, and release. A longer pull gives a faster launch.
+        </p>
+        <fieldset>
+            <legend>Physics visuals</legend>
+
+            <label for="showVelocity">
+                <input id="showVelocity" type="checkbox">
+                Velocity arrows
+            </label>
+
+            <label for="showForce">
+                <input id="showForce" type="checkbox">
+                Force arrows
+            </label>
+
+            <label for="showEnergy">
+                <input id="showEnergy" type="checkbox">
+                Energy graph
+            </label>
+        </fieldset>
+
+        <div class="controls">
+            <label for="zoomInput">
+                View zoom: <span id="zoomValue">1.00</span>×
+            </label>
+            <input id="zoomInput" type="range" min="0.5" max="3" step="0.1" value="1">
+            <button id="resetViewButton" type="button">Reset view</button>
+
+            <label for="arrowScaleInput">
+                Arrow size: <span id="arrowScaleValue">1.00</span>×
+            </label>
+            <input id="arrowScaleInput" type="range" min="0.25" max="10" step="0.25" value="1">
+        </div>
+
+        <p>
+            Zoom changes the view around its center; zooming in may hide
+            bodies near the edges. Reset view restores 1× zoom.
+            Arrow size magnifies both arrow types without changing the physics.
+            Arrow lengths remain capped.
+        </p>
+
+        <p>
+            Velocity arrows show motion direction and relative speed.
+            Force arrows show the most recently calculated continuous force;
+            collision impulses are not included. Long arrows are capped.
+            The energy graph shows recent total mechanical energy, including
+            changes caused by interaction.
+        </p>
+
+        <p id="canvasKeyboardHelp">
+            Keyboard: Tab to the canvas.
+            In Grab mode, N grabs the next movable body;
+            arrow keys move its spring target; G releases it.
+            In Launch mode, Enter begins aiming;
+            arrow keys adjust the pull;
+            Shift plus arrow keys moves the launch position;
+            Enter launches.
+            Escape cancels either interaction.
+            Space pauses or resumes; period advances one step.
+        </p>
+
+        <canvas id="sim" width="1000" height="850" tabindex="0" aria-label="Interactive physics simulation"
+            aria-describedby="canvasKeyboardHelp">
+            Your browser does not support HTML Canvas.
+        </canvas>
+
+        <p id="textDiagnostics" aria-label="Simulation diagnostics">
+            Waiting for simulation data.
+        </p>
+        <section id="energyPanel" hidden aria-labelledby="energyHeading">
+            <h2 id="energyHeading">Mechanical energy</h2>
+
+            <canvas id="energyCanvas" width="1000" height="180" role="img"
+                aria-label="Recent total mechanical energy versus simulated time" aria-describedby="energySummary">
+                The energy graph requires Canvas support.
+                Its latest value is provided below.
+            </canvas>
+
+            <p id="energySummary">Waiting for energy samples.</p>
+        </section>
+
+        <p id="durationHelp">
+            Duration is measured in simulated seconds.
+            Changes apply on Restart or when switching scenes.
+            Seeded run and Replay always use 60 seconds.
+        </p>
+
+        <p id="replayResults">
+            Replay test: click Seeded run to begin a reproducible box simulation.
+        </p>
+
+        <p>
+            Box performance: 2-second warm-up, then a 10-second average.
+            Keep this tab visible and leave the controls unchanged during measurement.
+        </p>
+        <pre id="performanceResults">No performance measurements yet.</pre>
+
+    </main>
+
+    <script type="module" src="./main.js"></script>
+    <script type="module" src="./control-help.js"></script>
+</body>
+
+</html>
