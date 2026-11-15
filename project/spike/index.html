@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Burial Shaft — Suspension Risk Test</title>
+    <style>
+        body {
+            max-width: 950px;
+            margin: 30px auto;
+            padding: 0 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        pre {
+            padding: 18px;
+            background: #eef2f5;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Suspension risk prototype</h1>
+    <p>
+        Numerical tests only. Reload to repeat.
+        This prototype does not change the main simulation.
+    </p>
+    <pre id="results">Running tests...</pre>
+
+    <script>
+        "use strict";
+
+        const g = 9.81;  // m/s²
+        const L = 3;     // rope length, m
+        const m = 2;     // suspended mass, kg
+
+        // Prescribed horizontal support motion.
+        // Position, velocity, and acceleration are mutually consistent.
+        function support(t, moving) {
+            const A = moving ? 0.25 : 0;
+            const frequency = 1.2; // angular frequency, rad/s
+
+            return {
+                x: A * (1 - Math.cos(frequency * t)),
+                vx: A * frequency * Math.sin(frequency * t),
+                ax: A * frequency * frequency *
+                    Math.cos(frequency * t)
+            };
+        }
+
+        // Angle is measured from vertically downward.
+        function angularAcceleration(theta, t, moving) {
+            const ax = support(t, moving).ax;
+
+            return (
+                -g * Math.sin(theta) -
+                ax * Math.cos(theta)
+            ) / L;
+        }
+
+        // Velocity Verlet for the angular equation.
+        function step(state, dt, moving) {
+            const a0 = angularAcceleration(
+                state.theta, state.t, moving
+            );
+
+            const halfOmega = state.omega + 0.5 * dt * a0;
+            const theta = state.theta + dt * halfOmega;
+            const nextTime = state.t + dt;
+
+            const a1 = angularAcceleration(theta, nextTime, moving);
+
+            return {
+                theta,
+                omega: halfOmega + 0.5 * dt * a1,
+                t: nextTime
+            };
+        }
+
+        function measure(state, moving) {
+            const pivot = support(state.t, moving);
+            const sine = Math.sin(state.theta);
+            const cosine = Math.cos(state.theta);
+
+            const x = pivot.x + L * sine;
+            const y = -L * cosine;
+            const vx = pivot.vx + L * cosine * state.omega;
+            const vy = L * sine * state.omega;
+
+            const energy =
+                0.5 * m * (vx * vx + vy * vy) +
+                m * g * (y + L);
+
+            const tension = m * (
+                L * state.omega * state.omega +
+                g * cosine -
+                pivot.ax * sine
+            );
+
+            return {
+                x, y, vx, vy, energy, tension,
+                lengthError: Math.abs(
+                    Math.hypot(x - pivot.x, y) - L
+                )
+            };
+        }
+
+        function simulate(dt, moving, initialAngle) {
+            const seconds = 60;
+            const steps = Math.round(seconds / dt);
+
+            let state = {
+                theta: initialAngle,
+                omega: 0,
+                t: 0
+            };
+
+            const initialEnergy = measure(state, moving).energy;
+            let maxRelativeEnergyError = 0;
+            let maxLengthError = 0;
+            let minTension = Infinity;
+            let finite = true;
+            const crossings = [];
+
+            for (let i = 0; i < steps; i++) {
+                const previous = state;
+                state = step(state, dt, moving);
+
+                // Downward zero crossings, one per full oscillation.
+                if (previous.theta > 0 && state.theta <= 0) {
+                    const fraction = previous.theta /
+                        (previous.theta - state.theta);
+
+                    crossings.push(previous.t + fraction * dt);
+                }
+
+                const values = measure(state, moving);
+
+                finite = finite &&
+                    Object.values(state).every(Number.isFinite) &&
+                    Object.values(values).every(Number.isFinite);
+
+                maxLengthError = Math.max(
+                    maxLengthError, values.lengthError
+                );
+
+                minTension = Math.min(minTension, values.tension);
+
+                maxRelativeEnergyError = Math.max(
+                    maxRelativeEnergyError,
+                    Math.abs(values.energy - initialEnergy) /
+                    Math.abs(initialEnergy)
+                );
+            }
+
+            const period = crossings.length > 1
+                ? (crossings[crossings.length - 1] - crossings[0]) /
+                (crossings.length - 1)
+                : NaN;
+
+            return {
+                state,
+                final: measure(state, moving),
+                period,
+                finite,
+                maxRelativeEnergyError,
+                maxLengthError,
+                minTension
+            };
+        }
+
+        const lines = [];
+        function report(name, passed, details) {
+            lines.push(
+                `${passed ? "PASS" : "FAIL"} — ${name}\n${details}\n`
+            );
+        }
+
+        // Test 1: small-angle period.
+        const fixed = simulate(1 / 240, false, 0.05);
+        const expectedPeriod = 2 * Math.PI * Math.sqrt(L / g);
+        const periodError = Math.abs(
+            fixed.period - expectedPeriod
+        ) / expectedPeriod;
+
+        report(
+            "Small-angle period",
+            periodError < 0.01,
+            `Expected: ${expectedPeriod.toFixed(8)} s\n` +
+            `Measured: ${fixed.period.toFixed(8)} s\n` +
+            `Relative error: ${periodError.toExponential(6)}\n` +
+            `Tolerance: less than 1%`
+        );
+
+        // Test 2: conservative reduction.
+        report(
+            "Fixed-support energy conservation over 60 s",
+            fixed.maxRelativeEnergyError < 0.001,
+            `Maximum relative error: ` +
+            `${fixed.maxRelativeEnergyError.toExponential(6)}\n` +
+            `Tolerance: less than 0.1%`
+        );
+
+        // Test 3: moving support and taut-rope validity.
+        const moving = simulate(1 / 240, true, 0.2);
+
+        report(
+            "Moving-support validity over 60 s",
+            moving.finite &&
+            moving.maxLengthError < 1e-10 &&
+            moving.minTension > 0,
+            `All values finite: ${moving.finite}\n` +
+            `Maximum length error: ` +
+            `${moving.maxLengthError.toExponential(6)} m\n` +
+            `Minimum tension: ${moving.minTension.toFixed(6)} N\n` +
+            `Required: length error < 1e-10 m and tension > 0`
+        );
+
+        // Test 4: timestep refinement under the same support motion.
+        const finer = simulate(1 / 480, true, 0.2);
+        const positionDifference = Math.hypot(
+            moving.final.x - finer.final.x,
+            moving.final.y - finer.final.y
+        );
+        const velocityDifference = Math.hypot(
+            moving.final.vx - finer.final.vx,
+            moving.final.vy - finer.final.vy
+        );
+
+        report(
+            "Moving-support timestep comparison",
+            positionDifference < 0.005 &&
+            velocityDifference < 0.005,
+            `Final position difference: ` +
+            `${positionDifference.toExponential(6)} m\n` +
+            `Final velocity difference: ` +
+            `${velocityDifference.toExponential(6)} m/s\n` +
+            `Tolerances: 0.005 m and 0.005 m/s`
+        );
+
+        lines.push(
+            "Interpretation:\n" +
+            "Rope length is enforced by the angular coordinates; " +
+            "tiny length error alone does not prove accurate motion.\n" +
+            "The period, energy, and timestep tests check the dynamics.\n" +
+            "Moving the support supplies or removes energy, so energy " +
+            "conservation is tested only with the support fixed.\n" +
+            "Positive tension validates only the tested motion. " +
+            "Slack rope, obstacles, and player controls are not tested here."
+        );
+
+        document.getElementById("results").textContent =
+            lines.join("\n");
+    </script>
+</body>
+
+</html>
