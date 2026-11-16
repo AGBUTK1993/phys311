@@ -47,10 +47,9 @@ I will limit support motion, monitor tension, and test representative control se
 
 | Week | Deliverable |
 | --- | --- |
-| 11 | Complete the suspension risk prototype, findings, proposal, and assigned peer feedback. |
-| 12 | Integrate the model and finish one playable chamber; deploy the MUST version on GitHub Pages. |
-| 13 | Test controls and robustness, address feedback, and prepare final documentation and presentation materials. Add optional features only if the core is complete. |
-| 14 | Complete remaining course peer review and presentation activities; document limitations and possible future chambers. |
+| 11 | Complete the proposal and risk spike; post the proposal and complete assigned peer feedback by its deadline. |
+| 12 | Finish and deploy the MUST tier; add instrumentation, run validation tests, and submit the check-in, beta, and progress log. |
+| 13 | Complete validation, documentation, presentation, final reflection, and launch. Add SHOULD features only if time permits. |
 
 # 7. Audience
 
