@@ -5,6 +5,7 @@ import {
     createBoxScene,
     createGravityScene,
     createSpringScene,
+    createSuspensionScene,
 } from "./scenes.js";
 import {
     Euler,
@@ -500,6 +501,19 @@ function restartSimulation() {
 
         renderer.showTrails = true;
         restitutionInput.disabled = true;
+    } else if (scene === "suspension") {
+        world = createSuspensionScene();
+
+        camera.scale = 40;
+        camera.originX = 500;
+        camera.originY = 530;
+
+        renderer.showTrails = false;
+        restitutionInput.disabled = true;
+
+        // This scene uses angular Velocity Verlet.
+        integratorSelect.value = "verlet";
+        integratorSelect.disabled = true;
     } else {
         world = createSpringScene({ integrator });
 
@@ -588,6 +602,11 @@ pauseButton.addEventListener("click", () => {
 
 integratorSelect.addEventListener("change", () => {
     performanceRecorder.stop();
+
+        if (sceneSelect.value === "suspension") {
+        integratorSelect.value = "verlet";
+        return;
+    }
 
     world.integrator = selectedIntegrator();
 });

@@ -8,6 +8,7 @@ import {
     Spring,
 } from "./engine/forces.js";
 import { createSeededRandom } from "./random.js";
+import { SuspensionWorld } from "./engine/suspension.js";
 
 // Create a fresh world containing a box of moving balls.
 export function createBoxScene({
@@ -215,4 +216,8 @@ export function createSpringScene({
     }
 
     return world;
+}
+
+export function createSuspensionScene() {
+    return new SuspensionWorld();
 }

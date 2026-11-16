@@ -142,6 +142,21 @@ export class Renderer {
             ctx.stroke();
         }
 
+        // Draw the suspension rope behind its endpoints.
+        if (world.rope) {
+            const start = camera.toScreen(world.rope.a.pos);
+            const end = camera.toScreen(world.rope.b.pos);
+
+            ctx.save();
+            ctx.strokeStyle = "#76552b";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         // Draw the current body positions.
         world.bodies.forEach((body, index) => {
             const screen = camera.toScreen(body.pos);
