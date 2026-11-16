@@ -12,7 +12,7 @@ const descriptions = {
     interactionSelect: ["Interaction", () => scene() === "gravity"
         ? "Dragging and launching are inactive in the orbit scene so the small orbiting masses are not disturbed. You can still use playback, zoom, and visuals."
         : scene() === "springs" ? "Choose Grab with spring to pull a mass using a damped spring. Release preserves its current velocity. Launch mode is only available in the ball box."
-        : "Grab with spring pulls an existing ball. Launch a ball: press empty space inside the box, pull backward, and release. Longer pulls increase speed up to 12 m/s. The dashed preview is free flight for up to 3 seconds; it stops at a wall and ignores other balls. Keyboard aiming is explained below."],
+            : "Grab with spring pulls an existing ball. Launch a ball: press empty space inside the box, pull backward, and release. Longer pulls increase speed up to 12 m/s. The dashed preview is free flight for up to 3 seconds; it stops at a wall and ignores other balls. Keyboard aiming is explained below."],
     durationSelect: ["Run duration", () => "Simulated seconds, not wall-clock time. Apply a new duration with Restart or a scene change. Unlimited has no timer stop. Seeded run and Replay always use 60 simulated seconds."],
     restartButton: ["Restart", () => "Rebuild this scene, apply the selected duration, and reset time and diagnostic comparisons. This clears launched balls and ends a seeded/replay run."],
     pauseButton: ["Pause or resume", () => "Pause or resume physics. Rendering stays active so aiming and view changes still work. After completion, use Restart. Shortcut: Space when no form control is focused."],
@@ -34,97 +34,126 @@ const descriptions = {
     arrowScaleInput: ["Arrow size", () => "Magnify velocity and force arrows from 0.25× to 10× without changing physics. The two types use different display scales and long arrows remain capped."],
 };
 
-let active = null, pinned = false, closeTimer;
+let active = null;
 const items = [];
+
 function closeHelp() {
-    clearTimeout(closeTimer);
-    if (active) {
-        active.tip.hidden = true;
-        active.button.setAttribute("aria-expanded", "false");
-    }
+    if (!active) return;
+
+    active.tip.hidden = true;
+    active.button.setAttribute("aria-expanded", "false");
     active = null;
-    pinned = false;
 }
+
 function placeHelp() {
     if (!active) return;
+
     const rect = active.button.getBoundingClientRect();
     const tip = active.tip;
-    const width = tip.offsetWidth, height = tip.offsetHeight;
-    const left = Math.max(12, Math.min(rect.left, innerWidth - width - 12));
+    const width = tip.offsetWidth;
+    const height = tip.offsetHeight;
+
+    const left = Math.max(
+        12,
+        Math.min(rect.left, innerWidth - width - 12)
+    );
+
     let top = rect.bottom + 6;
-    if (top + height > innerHeight - 12) top = rect.top - height - 6;
+    if (top + height > innerHeight - 12) {
+        top = rect.top - height - 6;
+    }
+
     tip.style.left = left + "px";
-    tip.style.top = Math.max(12, Math.min(top, innerHeight - height - 12)) + "px";
+    tip.style.top = Math.max(
+        12,
+        Math.min(top, innerHeight - height - 12)
+    ) + "px";
 }
+
 function showHelp(item) {
-    clearTimeout(closeTimer);
-    if (active !== item) closeHelp();
+    closeHelp();
     active = item;
+
     item.tip.textContent = item.text();
     item.tip.hidden = false;
     item.button.setAttribute("aria-expanded", "true");
+
     placeHelp();
-}
-function delayedClose(item) {
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(() => {
-        if (active === item && !pinned &&
-            document.activeElement !== item.button &&
-            !item.button.matches(":hover") && !item.tip.matches(":hover")) closeHelp();
-    }, 180);
 }
 
 for (const [id, [name, text]] of Object.entries(descriptions)) {
     const control = document.getElementById(id);
     if (!control) continue;
+
     const label = control.closest("label");
     const anchor = label || control;
+
     const group = document.createElement("span");
     group.className = "help-unit";
     anchor.before(group);
     group.append(anchor);
+
     const button = document.createElement("button");
     button.type = "button";
     button.className = "help-button";
     button.textContent = "?";
+    button.id = `help-button-${id}`;
     button.setAttribute("aria-label", `Help: ${name}`);
     button.setAttribute("aria-expanded", "false");
+
     const tip = document.createElement("div");
     tip.id = `help-${id}`;
     tip.className = "control-tooltip";
-    tip.setAttribute("role", "tooltip");
+    tip.setAttribute("role", "region");
+    tip.setAttribute("aria-labelledby", button.id);
     tip.hidden = true;
     tip.textContent = text();
-    button.setAttribute("aria-describedby", tip.id);
+
     button.setAttribute("aria-controls", tip.id);
-    group.append(button);
-    document.body.append(tip);
+
+    group.append(button, tip);
+
     const item = { button, tip, text };
     items.push(item);
-    button.addEventListener("pointerenter", event => {
-        if (event.pointerType !== "touch") showHelp(item);
-    });
-    button.addEventListener("focus", () => showHelp(item));
-    button.addEventListener("pointerleave", () => delayedClose(item));
-    button.addEventListener("blur", () => {
-        if (active === item) { pinned = false; delayedClose(item); }
-    });
-    tip.addEventListener("pointerenter", () => clearTimeout(closeTimer));
-    tip.addEventListener("pointerleave", () => delayedClose(item));
+
+    // Native buttons also generate clicks from Enter and Space.
     button.addEventListener("click", () => {
-        if (active === item && pinned) closeHelp();
-        else { showHelp(item); pinned = true; }
+        if (active === item) {
+            closeHelp();
+        } else {
+            showHelp(item);
+        }
     });
 }
+
 document.addEventListener("keydown", event => {
     if (event.key === "Escape" && active) {
         event.preventDefault();
         closeHelp();
     }
 });
+
 document.addEventListener("pointerdown", event => {
-    if (active && !active.button.contains(event.target) && !active.tip.contains(event.target)) closeHelp();
+    if (
+        active &&
+        !active.button.contains(event.target) &&
+        !active.tip.contains(event.target)
+    ) {
+        closeHelp();
+    }
 });
+
+// Tabbing away closes the current explanation without opening another.
+document.addEventListener("focusin", event => {
+    if (
+        active &&
+        !active.button.contains(event.target) &&
+        !active.tip.contains(event.target)
+    ) {
+        closeHelp();
+    }
+});
+
 window.addEventListener("resize", placeHelp);
 window.addEventListener("scroll", placeHelp, true);
 
@@ -146,7 +175,10 @@ const canvas = document.getElementById("sim");
 canvas.before(reference);
 const note = document.createElement("p");
 note.className = "help-note";
-note.textContent = "Hover, Tab to, or tap a ? for help. Escape closes it. Keyboard instructions are expandable below.";
+note.textContent =
+    "Click or tap a ? for help. With the keyboard, Tab to ? and press Enter or Space. " +
+    "Click it again, click outside, or press Escape to close. " +
+    "Keyboard instructions are expandable below.";
 document.getElementById("status").after(note);
 const purpose = document.getElementById("purposeHeading")?.closest("section");
 const sceneCopy = {
