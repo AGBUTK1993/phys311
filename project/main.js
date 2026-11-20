@@ -30,6 +30,10 @@ import { wirePlaybackExtras, wireKeyboardControls, wirePhysicsSliders, } from ".
 runCollisionValidation();
 import { Gravity, Spring, MouseSpring } from "./engine/forces.js";
 import { assertUsableState } from "./part-c-validation.js";
+import {
+    runSuspensionPeriodValidation,
+} from "./suspension-validation.js";
+
 
 // Check the drag force without changing the displayed simulation.
 {
@@ -167,6 +171,61 @@ arrowScaleInput.addEventListener("input", () => {
 });
 
 function applyViewZoom() {
+    if (sceneSelect.value === "suspension" && world?.anchor) {
+        const width = canvas.logicalWidth;
+        const height = canvas.logicalHeight;
+        const ropeLength = world.length;
+        const loadRadius = world.load.radius;
+
+        // Fixed bounds prevent the camera from chasing the swinging load.
+        // Include the support's full travel and the rope's full reach.
+        const travelMin = -3;
+        const travelMax = 3;
+        const margin = loadRadius + 0.35;
+
+        let xMin = travelMin - ropeLength - margin;
+        let xMax = travelMax + ropeLength + margin;
+        let yMin = world.anchor.pos.y - ropeLength - margin;
+        let yMax = world.anchor.pos.y + ropeLength + margin;
+
+        // Include the delivery region if it extends beyond those bounds.
+        const zone = world.delivery?.zone;
+
+        if (zone) {
+            xMin = Math.min(xMin, zone.xMin - margin);
+            xMax = Math.max(xMax, zone.xMax + margin);
+            yMin = Math.min(yMin, zone.yMin - margin);
+            yMax = Math.max(yMax, zone.yMax + margin);
+        }
+
+        const leftPadding = 45;
+        const rightPadding = 45;
+        const topPadding = 90;
+
+        // Reserve space for the bottom controls, including narrow screens.
+        const bottomPadding = 210;
+
+        const usableWidth = width - leftPadding - rightPadding;
+        const usableHeight = height - topPadding - bottomPadding;
+
+        const fittedScale = Math.min(
+            usableWidth / (xMax - xMin),
+            usableHeight / (yMax - yMin)
+        );
+
+        const worldCenterX = (xMin + xMax) / 2;
+        const worldCenterY = (yMin + yMax) / 2;
+        const screenCenterX = leftPadding + usableWidth / 2;
+        const screenCenterY = topPadding + usableHeight / 2;
+
+        camera.scale = fittedScale * viewZoom;
+        camera.originX =
+            screenCenterX - worldCenterX * camera.scale;
+        camera.originY =
+            screenCenterY + worldCenterY * camera.scale;
+
+        return;
+    }
     // Original camera settings for each scene at 1× zoom.
     const baseScale = 40;
     const baseOriginX = sceneSelect.value === "box" ? 100 : 500;
@@ -503,6 +562,16 @@ function restartSimulation() {
         restitutionInput.disabled = true;
     } else if (scene === "suspension") {
         world = createSuspensionScene();
+        world.conservativeMode = conservativeModeInput.checked;
+
+        if (world.conservativeMode) {
+            world.dampingRate = 0;
+            world.anchor.vel.x = 0;
+            world.anchor.vel.y = 0;
+            world.supportTarget = world.anchor.pos.x;
+            world.supportAcceleration = 0;
+            world.updateBodyState();
+        }
 
         camera.scale = 40;
         camera.originX = 500;
@@ -598,12 +667,16 @@ pauseButton.addEventListener("click", () => {
     status.textContent = paused
         ? "Simulation paused."
         : "Simulation running.";
+
+    if (paused) {
+        openGameMenu();
+    }
 });
 
 integratorSelect.addEventListener("change", () => {
     performanceRecorder.stop();
 
-        if (sceneSelect.value === "suspension") {
+    if (sceneSelect.value === "suspension") {
         integratorSelect.value = "verlet";
         return;
     }
@@ -677,6 +750,34 @@ function advanceOneStep() {
     try {
         world.step(DT);
         assertUsableState(world);
+
+        // Stop immediately when the rope model becomes invalid.
+        if (world.stoppedForSlack) {
+            paused = true;
+            finished = true;
+            accumulator = 0;
+            pauseButton.disabled = true;
+            status.textContent =
+                "The rope would go slack. Click Restart to try again.";
+            return false;
+        }
+
+        // Count delivery time in physics steps, not rendered frames.
+        if (world.delivery && !world.conservativeMode) {
+            world.delivery.update(world.load, DT);
+
+            if (world.delivery.won) {
+                paused = true;
+                finished = true;
+                pauseButton.textContent = "Delivered";
+                pauseButton.disabled = true;
+
+                status.textContent =
+                    "CHAMBER COMPLETE! The artifact stayed inside the " +
+                    "zone below 0.2 m/s for one simulated second. " +
+                    "Click Restart to try again.";
+            }
+        }
     } catch (error) {
         console.error("Simulation stopped and reset:", error);
         restartSimulation();
@@ -792,6 +893,47 @@ function frame(timestamp) {
     drawHUD(renderer.ctx, world, initialEnergy, stats);
     drawPointerOverlay(renderer.ctx, camera, pointer);
 
+    // Draw completion feedback above the other canvas overlays.
+    if (world.delivery?.won && !world.conservativeMode) {
+        const ctx = renderer.ctx;
+        const canvasWidth = canvas.logicalWidth;
+        const bannerWidth = Math.min(560, canvasWidth - 40);
+        const x = (canvasWidth - bannerWidth) / 2;
+        const y = 115;
+
+        ctx.save();
+        ctx.setTransform(
+            canvas.width / canvas.logicalWidth, 0,
+            0, canvas.height / canvas.logicalHeight,
+            0, 0
+        );
+
+        ctx.fillStyle = "#203d42";
+        ctx.fillRect(x, y, bannerWidth, 120);
+
+        ctx.strokeStyle = "#d6b56e";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, bannerWidth, 120);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f6e7be";
+        ctx.font = "bold 30px Georgia";
+        ctx.fillText(
+            "CHAMBER COMPLETE!",
+            canvasWidth / 2,
+            y + 47
+        );
+
+        ctx.font = "18px Arial";
+        ctx.fillText(
+            "Artifact secured. Select Restart to play again.",
+            canvasWidth / 2,
+            y + 85
+        );
+
+        ctx.restore();
+    }
+
     stats.renderMs = performance.now() - renderStart;
 
     if (!paused && !finished) {
@@ -861,6 +1003,699 @@ wirePhysicsSliders({
     },
 });
 
+// Suspension controls: native range input supports mouse, touch,
+// and keyboard arrows without adding global keyboard shortcuts.
+const suspensionControls = document.createElement("section");
+suspensionControls.hidden = true;
+
+const conservativeModeLabel = document.createElement("label");
+
+const conservativeModeInput = document.createElement("input");
+conservativeModeInput.type = "checkbox";
+conservativeModeInput.id = "conservativeModeInput";
+
+conservativeModeLabel.append(
+    conservativeModeInput,
+    document.createTextNode(
+        " Conservative mode — fixed support, no damping; restarts scene"
+    )
+);
+
+conservativeModeInput.addEventListener("change", () => {
+    if (sceneSelect.value === "suspension") {
+        restartSimulation();
+    }
+});
+
+const supportLabel = document.createElement("label");
+supportLabel.htmlFor = "supportTargetInput";
+supportLabel.textContent = "Support target: ";
+
+const supportTargetInput = document.createElement("input");
+supportTargetInput.type = "range";
+supportTargetInput.id = "supportTargetInput";
+supportTargetInput.min = "-3";
+supportTargetInput.max = "3";
+supportTargetInput.step = "0.1";
+supportTargetInput.value = "0";
+
+const supportTargetValue = document.createElement("output");
+supportTargetValue.htmlFor = supportTargetInput.id;
+supportTargetValue.textContent = "0.0 m";
+
+const suspensionInstructions = document.createElement("p");
+suspensionInstructions.textContent =
+    "Guide the entire load into the green delivery zone below " +
+    "0.2 m/s for one continuous simulated second. " +
+    "Tab to the support slider and use arrow keys, or use the mouse. " +
+    "The motor can add or remove energy; suspension damping removes energy. " +
+    "Conservative mode fixes the support, disables damping, and " +
+    "disables delivery completion so you can check energy conservation.";
+
+const suspensionReadout = document.createElement("p");
+suspensionReadout.setAttribute("aria-live", "off");
+supportLabel.append(supportTargetInput, supportTargetValue);
+suspensionControls.append(
+    conservativeModeLabel,
+    document.createElement("br"),
+    supportLabel,
+    suspensionInstructions,
+    suspensionReadout
+);
+canvas.before(suspensionControls);
+
+supportTargetInput.addEventListener("input", () => {
+    if (
+        sceneSelect.value !== "suspension" ||
+        !world ||
+        world.conservativeMode ||
+        finished ||
+        world.stoppedForSlack
+    ) return;
+
+    world.supportTarget = Number(supportTargetInput.value);
+    supportTargetValue.textContent =
+        world.supportTarget.toFixed(1) + " m";
+});
+
+// Refresh the readout and recognize new worlds created by Restart.
+let lastSuspensionWorld = null;
+
+setInterval(() => {
+    const isSuspension = sceneSelect.value === "suspension";
+    suspensionControls.hidden = !isSuspension;
+
+    if (!isSuspension || !world) return;
+
+    if (world !== lastSuspensionWorld) {
+        lastSuspensionWorld = world;
+        supportTargetInput.value = String(world.supportTarget);
+        supportTargetValue.textContent =
+            world.supportTarget.toFixed(1) + " m";
+    }
+
+    supportTargetInput.disabled =
+        world.conservativeMode || finished || world.stoppedForSlack;
+
+    const goal = world.delivery;
+    const loadSpeed = Math.hypot(world.load.vel.x, world.load.vel.y);
+
+    suspensionReadout.textContent =
+        `Support: ${world.anchor.pos.x.toFixed(2)} m | ` +
+        `Tension: ${world.tension.toFixed(2)} N | ` +
+        `Load speed: ${loadSpeed.toFixed(3)} m/s | `;
+
+    if (world.conservativeMode) {
+        suspensionReadout.textContent +=
+            "Conservative mode: support fixed, damping off, delivery disabled.";
+    } else {
+        suspensionReadout.textContent +=
+            `Delivery hold: ${goal.heldTime.toFixed(2)} / 1.00 s`;
+
+        if (goal.won) {
+            suspensionReadout.textContent += " — Delivery successful!";
+        }
+    }
+
+    if (world.stoppedForSlack) {
+        paused = true;
+        accumulator = 0;
+        pauseButton.disabled = true;
+        suspensionReadout.textContent +=
+            " — Stopped: the rope would go slack. Click Restart.";
+        status.textContent =
+            "Taut-rope model limit reached. Click Restart.";
+    }
+}, 100);
+
+// Game menu: uses the existing simulation state.
+const menuButton = document.getElementById("menuButton");
+const gameMenu = document.getElementById("gameMenu");
+const menuResume = document.getElementById("menuResume");
+const menuRestart = document.getElementById("menuRestart");
+const menuClose = document.getElementById("menuClose");
+const gameMenuStatus = document.getElementById("gameMenuStatus");
+
+function openGameMenu() {
+    if (gameMenu.open) return;
+
+    // Release active interactions before opening the menu.
+    pointer.cancelDrag();
+    launcher.cancel();
+    performanceRecorder.stop();
+
+    paused = true;
+    accumulator = 0;
+    previousTimestamp = null;
+
+    if (!finished) {
+        pauseButton.textContent = "Resume";
+    }
+
+    menuResume.disabled = finished;
+
+    gameMenuStatus.textContent = finished
+        ? "This run has ended. Restart to play again."
+        : "Game paused.";
+
+    gameMenu.showModal();
+}
+
+function closeGameMenu(resumePlay = false) {
+    if (!gameMenu.open) return;
+
+    // Only an explicit Resume action restarts motion.
+    paused = finished || !resumePlay;
+    accumulator = 0;
+    previousTimestamp = null;
+
+    if (!finished) {
+        pauseButton.textContent = paused ? "Resume" : "Pause";
+        status.textContent = paused
+            ? "Paused — inspect the scene, use Single step, " +
+            "or select Resume to continue."
+            : "Simulation running.";
+    }
+
+    gameMenu.close();
+    menuButton.focus();
+}
+
+menuButton.addEventListener("click", openGameMenu);
+
+menuResume.addEventListener("click", () => {
+    if (!finished) closeGameMenu(true);
+});
+
+menuClose.addEventListener("click", () => {
+    closeGameMenu();
+});
+
+menuRestart.addEventListener("click", () => {
+    gameMenu.close();
+    restartSimulation();
+    menuButton.focus();
+});
+
+// Escape closes the menu while leaving the scene paused.
+gameMenu.addEventListener("cancel", event => {
+    event.preventDefault();
+    closeGameMenu();
+});
+
+// Keep menu keystrokes away from gameplay keyboard handlers.
+// Native Tab, Enter, Space, and Escape behavior still works.
+gameMenu.addEventListener("keydown", event => {
+    event.stopPropagation();
+});
+
+// Settings may restart a scene, but an open menu must keep it paused.
+function keepMenuPaused() {
+    if (!gameMenu.open) return;
+
+    paused = true;
+    accumulator = 0;
+    previousTimestamp = null;
+
+    menuResume.disabled = finished;
+
+    if (!finished) {
+        pauseButton.textContent = "Resume";
+        gameMenuStatus.textContent =
+            "Game paused. Select Resume when ready.";
+    } else {
+        gameMenuStatus.textContent =
+            "This run has ended. Restart to play again.";
+    }
+}
+
+for (const eventName of ["input", "change", "click"]) {
+    gameMenu.addEventListener(eventName, keepMenuPaused);
+}
+
+// Move existing controls after both UI modules finish initialization.
+window.addEventListener("DOMContentLoaded", () => {
+    const settingsContent =
+        document.getElementById("menuSettingsContent");
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "game-toolbar";
+    toolbar.setAttribute("role", "group");
+    toolbar.setAttribute("aria-label", "Game controls");
+
+    // Keep the canvas and its HTML controls in one positioned container.
+    const gameArea = document.createElement("div");
+    gameArea.className = "game-area";
+
+    canvas.before(gameArea);
+    gameArea.append(toolbar, canvas);
+    // Fullscreen includes HTML controls and the settings dialog.
+    gameArea.append(gameMenu);
+
+    const fullscreenButton = document.createElement("button");
+    fullscreenButton.type = "button";
+    fullscreenButton.className = "game-fullscreen-button";
+    fullscreenButton.textContent = "Fullscreen";
+    fullscreenButton.setAttribute("aria-label", "Enter fullscreen");
+    fullscreenButton.setAttribute("aria-pressed", "false");
+    gameArea.append(fullscreenButton);
+
+    fullscreenButton.disabled =
+        !document.fullscreenEnabled ||
+        typeof gameArea.requestFullscreen !== "function";
+
+    if (fullscreenButton.disabled) {
+        fullscreenButton.title =
+            "Fullscreen is unavailable in this browser or page.";
+    }
+
+    fullscreenButton.addEventListener("click", async () => {
+        clearSupportKeys();
+
+        try {
+            if (document.fullscreenElement === gameArea) {
+                await document.exitFullscreen();
+            } else {
+                await gameArea.requestFullscreen({
+                    keyboardLock: "browser",
+                });
+
+                // Compatibility with browsers exposing Keyboard.lock().
+                if (
+                    document.fullscreenElement === gameArea &&
+                    navigator.keyboard?.lock
+                ) {
+                    try {
+                        await navigator.keyboard.lock(["Escape"]);
+
+                        // Fullscreen may have ended while permission
+                        // was being handled.
+                        if (document.fullscreenElement !== gameArea) {
+                            navigator.keyboard.unlock();
+                        }
+                    } catch (error) {
+                        console.info(
+                            "Escape remains controlled by the browser.",
+                            error
+                        );
+                    }
+                }
+            }
+        } catch (error) {
+            status.textContent =
+                "Fullscreen could not start. You can continue playing here.";
+            console.warn("Fullscreen request failed:", error);
+        }
+
+        if (!gameMenu.open) focusGame();
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+        const isFullscreen =
+            document.fullscreenElement === gameArea;
+        if (!isFullscreen) {
+            navigator.keyboard?.unlock?.();
+        }
+
+        fullscreenButton.textContent =
+            isFullscreen ? "Exit fullscreen" : "Fullscreen";
+
+        fullscreenButton.setAttribute(
+            "aria-label",
+            isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+        );
+
+        fullscreenButton.setAttribute(
+            "aria-pressed",
+            String(isFullscreen)
+        );
+
+        clearSupportKeys();
+        pointer.cancelDrag();
+        launcher.cancel();
+
+        if (!gameMenu.open) focusGame();
+    });
+
+    // Bottom-center support slider and shortcut strip.
+    const bottomControls = document.createElement("div");
+    bottomControls.className = "game-bottom-controls";
+
+    const shortcuts = document.createElement("div");
+    shortcuts.className = "game-shortcuts";
+    shortcuts.setAttribute("aria-label", "Keyboard shortcuts");
+
+    shortcuts.innerHTML = `
+        <span>
+            <kbd>A</kbd><kbd>D</kbd>
+            /
+            <kbd>←</kbd><kbd>→</kbd>
+            Move
+        </span>
+        <span><kbd>Space</kbd> Pause</span>
+        <span><kbd>Esc</kbd> Menu</span>
+    `;
+
+    supportLabel.classList.add("game-support-control");
+    bottomControls.append(shortcuts, supportLabel);
+    gameArea.append(bottomControls);
+
+    function syncGameOverlay() {
+        bottomControls.hidden = sceneSelect.value !== "suspension";
+    }
+
+    sceneSelect.addEventListener("change", syncGameOverlay);
+    syncGameOverlay();
+    // Keyboard control belongs to the canvas. Settings retain normal input.
+    const heldSupportKeys = new Set();
+    const horizontalKeys = new Set([
+        "a", "d", "ArrowLeft", "ArrowRight",
+    ]);
+    const reservedVerticalKeys = new Set([
+        "w", "s", "ArrowUp", "ArrowDown",
+    ]);
+
+    function clearSupportKeys() {
+        heldSupportKeys.clear();
+    }
+
+    function focusGame() {
+        canvas.focus({ preventScroll: true });
+    }
+
+    // Handle menu shortcuts before the canvas and dialog handlers.
+    window.addEventListener("keydown", event => {
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        const key = event.key.toLowerCase();
+        const target = event.target;
+
+        const inGame =
+            gameArea.contains(document.activeElement) ||
+            gameMenu.open ||
+            document.fullscreenElement === gameArea;
+
+        if (!inGame) return;
+
+        // Escape works from settings too; letter shortcuts must not
+        // interfere with typing or native form-control behavior.
+        const editingControl =
+            target instanceof HTMLElement &&
+            (
+                target.closest(
+                    "input, select, textarea, button, summary"
+                ) ||
+                target.isContentEditable
+            );
+
+        if (key !== "escape" && editingControl) return;
+        if (!["f", "m", "b", "escape"].includes(key)) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        // Holding a toggle key must not repeatedly toggle its action.
+        if (event.repeat) return;
+
+        clearSupportKeys();
+
+        if (key === "f") {
+            fullscreenButton.click();
+            return;
+        }
+
+        if (key === "m") {
+            if (gameMenu.open) {
+                closeGameMenu(false);
+            } else {
+                openGameMenu();
+            }
+            return;
+        }
+
+        if (key === "b") {
+            openGameMenu();
+
+            const debugSettings =
+                document.getElementById("menuSettings");
+
+            debugSettings.open = true;
+            debugSettings.querySelector("summary").focus();
+            return;
+        }
+
+        // Escape closes the menu first, without resuming.
+        if (gameMenu.open) {
+            closeGameMenu(false);
+            return;
+        }
+
+        // With no menu open, Escape exits fullscreen.
+        if (document.fullscreenElement === gameArea) {
+            document.exitFullscreen().catch(error => {
+                console.warn("Could not exit fullscreen:", error);
+            });
+        }
+    }, { capture: true });
+
+    // A finer slider step keeps its displayed position smooth.
+    supportTargetInput.step = "0.01";
+
+    canvas.addEventListener("pointerdown", focusGame);
+
+    canvas.addEventListener("keydown", event => {
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        const key = event.key.length === 1
+            ? event.key.toLowerCase()
+            : event.key;
+
+        if (sceneSelect.value !== "suspension") return;
+
+        // Reserve vertical movement without moving another interaction target.
+        if (reservedVerticalKeys.has(key)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+        }
+
+        if (!horizontalKeys.has(key)) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (
+            gameMenu.open ||
+            paused ||
+            finished ||
+            !world ||
+            world.conservativeMode ||
+            world.stoppedForSlack
+        ) return;
+
+        // Ignore auto-repeat after a focus change or pause.
+        if (!event.repeat) heldSupportKeys.add(key);
+    }, { capture: true });
+
+    window.addEventListener("keyup", event => {
+        const key = event.key.length === 1
+            ? event.key.toLowerCase()
+            : event.key;
+
+        heldSupportKeys.delete(key);
+    }, { capture: true });
+
+    canvas.addEventListener("blur", clearSupportKeys);
+    window.addEventListener("blur", clearSupportKeys);
+    window.addEventListener("pagehide", clearSupportKeys);
+    document.addEventListener("visibilitychange", clearSupportKeys);
+    sceneSelect.addEventListener("change", clearSupportKeys);
+
+    // Clear movement as soon as the menu opens or closes.
+    const menuObserver = new MutationObserver(clearSupportKeys);
+    menuObserver.observe(gameMenu, {
+        attributes: true,
+        attributeFilter: ["open"],
+    });
+
+    // Playback actions clear held movement. Closing the menu returns
+    // keyboard focus to the game; settings controls keep their own focus.
+    for (const id of [
+        "menuButton",
+        "pauseButton",
+        "restartButton",
+        "menuResume",
+        "menuRestart",
+        "menuClose",
+    ]) {
+        document.getElementById(id).addEventListener("click", () => {
+            clearSupportKeys();
+
+            if (!gameMenu.open) focusGame();
+        });
+    }
+
+    gameMenu.addEventListener("close", () => {
+        clearSupportKeys();
+        focusGame();
+    });
+
+    let previousSupportTime = null;
+    let keyboardWorld = world;
+    const supportKeyboardSpeed = 1.5; // Target movement in meters per second.
+
+    function updateSupportKeyboard(timestamp) {
+        const elapsed = previousSupportTime === null
+            ? 0
+            : Math.min((timestamp - previousSupportTime) / 1000, 0.05);
+
+        previousSupportTime = timestamp;
+
+        if (world !== keyboardWorld) {
+            keyboardWorld = world;
+            clearSupportKeys();
+        }
+
+        const canMove =
+            document.activeElement === canvas &&
+            !document.hidden &&
+            !gameMenu.open &&
+            sceneSelect.value === "suspension" &&
+            world &&
+            !paused &&
+            !finished &&
+            !world.conservativeMode &&
+            !world.stoppedForSlack;
+
+        if (!canMove) {
+            clearSupportKeys();
+        } else {
+            const left =
+                heldSupportKeys.has("a") ||
+                heldSupportKeys.has("ArrowLeft");
+
+            const right =
+                heldSupportKeys.has("d") ||
+                heldSupportKeys.has("ArrowRight");
+
+            const direction = Number(right) - Number(left);
+
+            if (direction !== 0) {
+                const minimum = Number(supportTargetInput.min);
+                const maximum = Number(supportTargetInput.max);
+
+                world.supportTarget = Math.max(
+                    minimum,
+                    Math.min(
+                        maximum,
+                        world.supportTarget +
+                        direction * supportKeyboardSpeed * elapsed
+                    )
+                );
+
+                supportTargetInput.value = String(world.supportTarget);
+                supportTargetValue.textContent =
+                    world.supportTarget.toFixed(1) + " m";
+            }
+        }
+
+        requestAnimationFrame(updateSupportKeyboard);
+    }
+
+    requestAnimationFrame(updateSupportKeyboard);
+
+    // Start ready to play without requiring a click.
+    focusGame();
+
+    // Preserve the help button and explanation attached to each control.
+    function moveWithHelp(id, destination) {
+        const control = document.getElementById(id);
+        if (!control) return;
+
+        const unit = control.closest(".help-unit") || control;
+        destination.append(unit);
+    }
+
+    // Primary game controls stay over the canvas.
+    for (const id of [
+        "menuButton",
+        "pauseButton",
+        "restartButton",
+    ]) {
+        moveWithHelp(id, toolbar);
+    }
+
+    // Move the remaining settings groups into the menu.
+    for (const group of document.querySelectorAll("main > .controls")) {
+        settingsContent.append(group);
+    }
+
+    // Move the physics visuals checkboxes.
+    const visuals = document.getElementById("showVelocity")
+        ?.closest("fieldset");
+
+    if (visuals) {
+        const selectAllLabel = document.createElement("label");
+        selectAllLabel.className = "visuals-select-all";
+
+        const selectAll = document.createElement("input");
+        selectAll.type = "checkbox";
+        selectAll.id = "selectAllVisuals";
+
+        selectAllLabel.append(
+            selectAll,
+            document.createTextNode(" Select all physics visuals")
+        );
+
+        const legend = visuals.querySelector("legend");
+
+        if (legend) {
+            legend.after(selectAllLabel);
+        } else {
+            visuals.prepend(selectAllLabel);
+        }
+
+        const visualOptions = [
+            showVelocity,
+            showForce,
+            showEnergy,
+        ];
+
+        function syncSelectAll() {
+            const checkedCount =
+                visualOptions.filter(option => option.checked).length;
+
+            selectAll.checked = checkedCount === visualOptions.length;
+            selectAll.indeterminate =
+                checkedCount > 0 && checkedCount < visualOptions.length;
+        }
+
+        selectAll.addEventListener("change", () => {
+            const checked = selectAll.checked;
+
+            for (const option of visualOptions) {
+                option.checked = checked;
+                option.dispatchEvent(
+                    new Event("change", { bubbles: true })
+                );
+            }
+
+            syncSelectAll();
+        });
+
+        for (const option of visualOptions) {
+            option.addEventListener("change", syncSelectAll);
+        }
+
+        syncSelectAll();
+        settingsContent.append(visuals);
+    }
+
+    // Move conservative mode; leave the support slider beside the game.
+    settingsContent.append(conservativeModeLabel);
+});
+
 wireKeyboardControls();
 restartSimulation();
 requestAnimationFrame(frame);
+runSuspensionPeriodValidation();

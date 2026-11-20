@@ -67,19 +67,25 @@ export function wireKeyboardControls() {
         } else if (["-", "_", "+", "="].includes(key)) {
             event.preventDefault();
 
-            if (speedInput.disabled) return;
+            const zoomInput = document.getElementById("zoomInput");
+            if (!zoomInput || zoomInput.disabled) return;
 
             const direction = key === "-" || key === "_" ? -1 : 1;
-            const current = parseFloat(speedInput.value);
+            const current = Number(zoomInput.value);
+            const increment = Number(zoomInput.step) || 0.1;
 
-            speedInput.value = String(
-                Math.max(0.25, Math.min(2, current + direction * 0.25))
+            const next = Math.max(
+                Number(zoomInput.min),
+                Math.min(
+                    Number(zoomInput.max),
+                    current + direction * increment
+                )
             );
 
-            speedInput.dispatchEvent(
+            zoomInput.value = next.toFixed(2);
+            zoomInput.dispatchEvent(
                 new Event("input", { bubbles: true })
             );
-        } else if (key === "i") {
             event.preventDefault();
 
             if (integratorSelect.disabled) return;

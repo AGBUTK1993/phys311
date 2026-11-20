@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHYS 311 — Lab 10</title>
+    <title>The Burial Shaft — Alex Bebb</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./control-help.css">
@@ -12,30 +12,24 @@
 
 <body>
     <main>
-        <h1>Lab 10: Interactive Physics</h1>
+        <header class="game-header">
+            <p class="game-eyebrow">An Egyptian-inspired physics game</p>
+            <h1>The Burial Shaft</h1>
+            <p class="game-subtitle">Recover carefully. Control the swing.</p>
+        </header>
+
         <section aria-labelledby="purposeHeading">
-            <h2 id="purposeHeading">Launch, Fall, and Bounce</h2>
-
+            <h2 id="purposeHeading">The first chamber</h2>
             <p>
-                How do gravity and bounce affect a launched ball?
-                Launch a ball, compare its motion with the predicted path,
-                and explore what happens when it hits the walls.
+                Guide a suspended archaeological find into the delivery zone.
+                Move the support carefully, let the swinging settle, and keep
+                the entire load inside the zone below 0.2 m/s for one second.
             </p>
-
             <p>
-                <strong>Try it:</strong>
-                Choose the ball-box scene and “Launch a ball.”
-                Set downward gravity to 2 m/s², then press in an empty
-                part of the box, pull backward, and release.
-                Change restitution to compare nearly elastic bounces
-                with bounces that lose kinetic energy.
-            </p>
-
-            <p>
-                The dashed preview predicts free flight under gravity.
-                It ends at the box boundary and does not predict collisions
-                with other balls. Launching and dragging add energy, so
-                energy changes during interaction are not conservation tests.
+                Choose <strong>Burial Shaft — suspension</strong>.
+                Use the support slider with the mouse, or Tab to it and
+                use the arrow keys. Restart begins a new attempt.
+                The other scenes remain available as physics demonstrations.
             </p>
         </section>
         <p>Alex Bebb — PHYS 311</p>
@@ -48,8 +42,8 @@
                 <select id="sceneSelect">
                     <option value="box">20-ball box</option>
                     <option value="gravity">Gravitational orbits</option>
-                    <option value="springs" selected>Spring chain</option>
-                    <option value="suspension">Burial Shaft — suspension</option>
+                    <option value="springs">Spring chain</option>
+                    <option value="suspension" selected>Burial Shaft — suspension</option>
                 </select>
             </label>
 
@@ -87,13 +81,14 @@
             <label for="durationSelect">Run duration:</label>
             <select id="durationSelect" aria-describedby="durationHelp">
                 <option value="30">30 seconds</option>
-                <option value="60" selected>60 seconds</option>
+                <option value="60">60 seconds</option>
                 <option value="120">120 seconds</option>
-                <option value="unlimited">Unlimited</option>
+                <option value="unlimited" selected>Unlimited</option>
             </select>
 
             <button id="restartButton" type="button">Restart</button>
             <button id="pauseButton" type="button">Pause</button>
+            <button id="menuButton" type="button">Menu</button>
             <button id="stepButton" type="button">Single step</button>
 
             <label for="speedInput">
@@ -234,6 +229,58 @@
             Keep this tab visible and leave the controls unchanged during measurement.
         </p>
         <pre id="performanceResults">No performance measurements yet.</pre>
+
+        <dialog id="gameMenu" aria-labelledby="gameMenuHeading">
+            <h2 id="gameMenuHeading">The Burial Shaft</h2>
+            <p id="gameMenuStatus">Game paused.</p>
+            <p class="menu-hint">
+                Press Esc or choose Close menu to inspect the paused scene.
+                Choose Resume when you are ready to continue.
+            </p>
+
+            <div class="menu-actions">
+                <button id="menuResume" type="button" autofocus>
+                    Resume
+                </button>
+                <button id="menuRestart" type="button">
+                    Restart scene
+                </button>
+            </div>
+
+            <details id="menuSettings">
+                <summary>Settings and physics tools</summary>
+                <p>
+                    Scene and certain physics changes restart the simulation.
+                    Close the menu or select Resume when ready to continue.
+                </p>
+                <div id="menuSettingsContent"></div>
+            </details>
+
+            <details class="menu-instructions">
+                <summary>Instructions</summary>
+                <p>
+                    In the Burial Shaft, move the support slider to guide the
+                    suspended artifact. Tab to the slider and use the arrow
+                    keys for keyboard control.
+                </p>
+                <p>
+                    Keep the entire artifact inside the delivery zone below
+                    0.2 m/s for one continuous simulated second.
+                    Moving the support can add or remove energy;
+                    damping gradually reduces the swing.
+                </p>
+                <p>
+                    Conservative mode fixes the support, removes damping,
+                    and disables delivery completion for physics testing.
+                </p>
+                <p>
+                    Other physics scenes retain their own controls and
+                    question-mark help buttons.
+                </p>
+            </details>
+
+            <button id="menuClose" type="button">Close menu</button>
+        </dialog>
 
     </main>
 

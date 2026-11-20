@@ -16,6 +16,7 @@ export class World {
     this.restitution = restitution;
     this.collisionsEnabled = collisionsEnabled;
     this.time = 0;
+    this.contactsResolved = 0;
   }
 
   addBody(body) {
@@ -46,10 +47,10 @@ export class World {
     // 3. Advance velocities and positions.
     this.integrator.step(this, dt);
 
-    // 4. Resolve contacts when enabled.
-    if (this.collisionsEnabled) {
-      resolveCollisions(this);
-    }
+    // Count contacts receiving an impulse in this physics step.
+    this.contactsResolved = this.collisionsEnabled
+      ? resolveCollisions(this)
+      : 0;
 
     // 5. Advance the simulation clock.
     this.time += dt;

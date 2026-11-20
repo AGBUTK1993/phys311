@@ -182,6 +182,14 @@ note.textContent =
 document.getElementById("status").after(note);
 const purpose = document.getElementById("purposeHeading")?.closest("section");
 const sceneCopy = {
+    suspension: [
+        "The first chamber",
+        "Recover a suspended artifact by guiding it into the delivery zone. " +
+        "The moving support drives the swing, while damping helps it settle.",
+        "Try it: move the support target toward 2.0 m. Keep the entire " +
+        "artifact inside the zone below 0.2 m/s for one continuous second. " +
+        "Use conservative mode separately to test energy conservation."
+    ],
     box: ["Launch, Fall, and Bounce", "Explore how gravity curves a projectile's path and restitution changes its bounce.",
         "Try it: choose Launch a ball, set gravity to 2 m/s², then press empty space in the box, pull backward, and release. Use the ? beside Mouse action for details."],
     gravity: ["Gravitational Orbits", "Explore motion under mutual gravitational attraction and compare energy behavior between integrators.",

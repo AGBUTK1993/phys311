@@ -63,6 +63,264 @@ export class Renderer {
         this.lastTrailTime = world.time;
     }
 
+    drawChamberBackdrop() {
+        const ctx = this.ctx;
+        const w = this.canvas.logicalWidth;
+        const h = this.canvas.logicalHeight;
+
+        ctx.save();
+
+        // Painted rear wall: scenery, not collision geometry.
+        const stone = ctx.createLinearGradient(0, 0, 0, h);
+        stone.addColorStop(0, "#c9ad78");
+        stone.addColorStop(1, "#ead9b3");
+        ctx.fillStyle = stone;
+        ctx.fillRect(0, 0, w, h);
+
+        // Staggered sandstone masonry.
+        ctx.strokeStyle = "rgba(92, 67, 37, 0.16)";
+        ctx.lineWidth = 2;
+
+        for (let row = 0, y = 0; y < h; row++, y += 85) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+
+            const offset = row % 2 === 0 ? 0 : -90;
+            for (let x = offset; x < w; x += 180) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, Math.min(y + 85, h));
+            }
+            ctx.stroke();
+        }
+
+        // Decorative painted bands.
+        ctx.fillStyle = "#294d50";
+        ctx.fillRect(0, 0, w, 92);
+        ctx.fillRect(0, h - 24, w, 24);
+
+        ctx.fillStyle = "#c49a50";
+        ctx.fillRect(0, 90, w, 4);
+        ctx.fillRect(0, h - 27, w, 3);
+
+        // Stylized winged solar motif, not a written inscription.
+        ctx.save();
+        ctx.translate(w / 2, 45);
+        ctx.strokeStyle = "#d6b56e";
+        ctx.lineWidth = 3;
+
+        for (const side of [-1, 1]) {
+            for (let feather = 0; feather < 6; feather++) {
+                ctx.beginPath();
+                ctx.moveTo(side * 23, 0);
+                ctx.lineTo(
+                    side * (65 + feather * 15),
+                    -15 + feather * 6
+                );
+                ctx.stroke();
+            }
+        }
+
+        ctx.fillStyle = "#d6b56e";
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#a95132";
+        ctx.beginPath();
+        ctx.arc(0, 0, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    drawArtifact(body) {
+        const ctx = this.ctx;
+        const screen = this.camera.toScreen(body.pos);
+        const r = body.radius * this.camera.scale;
+
+        ctx.save();
+        ctx.translate(screen.x, screen.y);
+        ctx.scale(r, r);
+
+        // The circular cradle matches the radius used by delivery detection.
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, Math.PI * 2);
+        ctx.fillStyle = "#25474c";
+        ctx.fill();
+        ctx.strokeStyle = "#b89555";
+        ctx.lineWidth = 0.09;
+        ctx.stroke();
+
+        // Keep all mask artwork inside the physical footprint.
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, 0.94, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Stylized gold-and-blue headdress.
+        ctx.beginPath();
+        ctx.moveTo(-0.36, -0.75);
+        ctx.quadraticCurveTo(0, -1.02, 0.36, -0.75);
+        ctx.lineTo(0.82, 0.68);
+        ctx.lineTo(0.28, 0.81);
+        ctx.lineTo(0, 0.47);
+        ctx.lineTo(-0.28, 0.81);
+        ctx.lineTo(-0.82, 0.68);
+        ctx.closePath();
+        ctx.fillStyle = "#d8ad51";
+        ctx.fill();
+
+        ctx.strokeStyle = "#244a78";
+        ctx.lineWidth = 0.10;
+
+        for (const side of [-1, 1]) {
+            for (let i = 0; i < 5; i++) {
+                const y = -0.35 + i * 0.22;
+                ctx.beginPath();
+                ctx.moveTo(side * 0.37, y);
+                ctx.lineTo(side * (0.49 + i * 0.065), y + 0.10);
+                ctx.stroke();
+            }
+        }
+
+        // Face.
+        ctx.beginPath();
+        ctx.ellipse(0, -0.08, 0.36, 0.53, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#f0cb73";
+        ctx.fill();
+
+        // Brows and eyes.
+        ctx.strokeStyle = "#28333c";
+        ctx.lineWidth = 0.055;
+
+        for (const side of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(side * 0.07, -0.28);
+            ctx.lineTo(side * 0.27, -0.30);
+            ctx.moveTo(side * 0.08, -0.16);
+            ctx.lineTo(side * 0.27, -0.14);
+            ctx.stroke();
+        }
+
+        // Nose and mouth.
+        ctx.strokeStyle = "#9a652c";
+        ctx.lineWidth = 0.04;
+        ctx.beginPath();
+        ctx.moveTo(0, -0.12);
+        ctx.lineTo(-0.04, 0.10);
+        ctx.lineTo(0.04, 0.10);
+        ctx.moveTo(-0.12, 0.23);
+        ctx.quadraticCurveTo(0, 0.28, 0.12, 0.23);
+        ctx.stroke();
+
+        // Ceremonial beard.
+        ctx.fillStyle = "#244a78";
+        ctx.beginPath();
+        ctx.moveTo(-0.09, 0.39);
+        ctx.lineTo(0.09, 0.39);
+        ctx.lineTo(0.06, 0.76);
+        ctx.lineTo(-0.06, 0.76);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+        ctx.restore();
+    }
+
+    drawSuspensionRig(world) {
+        const ctx = this.ctx;
+        const camera = this.camera;
+
+        // Rail endpoints match the support slider's travel range.
+        const left = camera.toScreen({
+            x: -3,
+            y: world.anchor.pos.y,
+        });
+
+        const right = camera.toScreen({
+            x: 3,
+            y: world.anchor.pos.y,
+        });
+
+        const support = camera.toScreen(world.anchor.pos);
+        const target = camera.toScreen({
+            x: world.supportTarget,
+            y: world.anchor.pos.y,
+        });
+
+        const unit = camera.scale;
+        const railY = support.y - 0.28 * unit;
+
+        ctx.save();
+
+        // Modern recovery equipment against the chamber backdrop.
+        ctx.fillStyle = "#36464b";
+        ctx.fillRect(
+            left.x - 0.18 * unit,
+            railY - 0.10 * unit,
+            right.x - left.x + 0.36 * unit,
+            0.20 * unit
+        );
+
+        ctx.strokeStyle = "#b8c2be";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(left.x, railY);
+        ctx.lineTo(right.x, railY);
+        ctx.stroke();
+
+        // End stops.
+        ctx.fillStyle = "#9b783c";
+        for (const x of [left.x, right.x]) {
+            ctx.fillRect(
+                x - 0.08 * unit,
+                railY - 0.20 * unit,
+                0.16 * unit,
+                0.40 * unit
+            );
+        }
+
+        // Requested position marker.
+        if (!world.conservativeMode) {
+            ctx.fillStyle = "#28656a";
+            ctx.beginPath();
+            ctx.moveTo(target.x, railY - 0.28 * unit);
+            ctx.lineTo(target.x - 0.12 * unit, railY - 0.48 * unit);
+            ctx.lineTo(target.x + 0.12 * unit, railY - 0.48 * unit);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Carriage follows the actual support, not the target.
+        ctx.fillStyle = "#bd9148";
+        ctx.strokeStyle = "#493b27";
+        ctx.lineWidth = 2;
+
+        ctx.fillRect(
+            support.x - 0.23 * unit,
+            railY - 0.16 * unit,
+            0.46 * unit,
+            0.32 * unit
+        );
+
+        ctx.strokeRect(
+            support.x - 0.23 * unit,
+            railY - 0.16 * unit,
+            0.46 * unit,
+            0.32 * unit
+        );
+
+        // Hanger joins the carriage to the physical rope endpoint.
+        ctx.beginPath();
+        ctx.moveTo(support.x, railY + 0.16 * unit);
+        ctx.lineTo(support.x, support.y);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
     draw(world) {
         const ctx = this.ctx;
         const camera = this.camera;
@@ -77,6 +335,9 @@ export class Renderer {
             0, this.canvas.height / this.canvas.logicalHeight,
             0, 0
         );
+        if (world.rope) {
+            this.drawChamberBackdrop();
+        }
 
         // Draw the walls for scenes that have boundaries.
         if (world.bounds !== null) {
@@ -142,8 +403,61 @@ export class Renderer {
             ctx.stroke();
         }
 
+        // Delivery zone: a target region, not a physical wall.
+        if (world.delivery) {
+            const goal = world.delivery;
+            const z = goal.zone;
+            const corner = camera.toScreen({
+                x: z.xMin,
+                y: z.yMax,
+            });
+
+            const width = (z.xMax - z.xMin) * camera.scale;
+            const height = (z.yMax - z.yMin) * camera.scale;
+
+            ctx.save();
+            ctx.fillStyle = goal.won
+                ? "rgba(46, 125, 50, 0.35)"
+                : "rgba(46, 125, 50, 0.12)";
+            ctx.strokeStyle = "#2e7d32";
+            ctx.lineWidth = 2;
+
+            ctx.fillRect(corner.x, corner.y, width, height);
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(corner.x, corner.y, width, height);
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = "#205b25";
+            ctx.font = "14px Arial";
+            ctx.fillText(
+                goal.won ? "Delivered!" : "Delivery zone",
+                corner.x,
+                corner.y - 10
+            );
+
+            const progress = goal.heldTime / goal.requiredTime;
+            ctx.fillRect(
+                corner.x,
+                corner.y + height + 6,
+                width * progress,
+                5
+            );
+            if (goal.won) {
+                ctx.fillStyle = "#205b25";
+                ctx.font = "bold 16px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "DONE!",
+                    corner.x + width / 2,
+                    corner.y + height + 32
+                );
+            }
+            ctx.restore();
+        }
+
         // Draw the suspension rope behind its endpoints.
         if (world.rope) {
+            this.drawSuspensionRig(world);
             const start = camera.toScreen(world.rope.a.pos);
             const end = camera.toScreen(world.rope.b.pos);
 
@@ -161,6 +475,19 @@ export class Renderer {
         world.bodies.forEach((body, index) => {
             const screen = camera.toScreen(body.pos);
             const radiusPixels = body.radius * camera.scale;
+            if (world.rope && body === world.load) {
+                this.drawArtifact(body);
+
+                ctx.fillStyle = "#30271c";
+                ctx.font = "14px Arial";
+                ctx.fillText(
+                    "Death mask",
+                    screen.x + radiusPixels + 8,
+                    screen.y + 5
+                );
+
+                return; // Skip the ordinary circle for this body only.
+            }
 
             ctx.beginPath();
             ctx.arc(screen.x, screen.y, radiusPixels, 0, 2 * Math.PI);

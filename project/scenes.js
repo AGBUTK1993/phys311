@@ -9,6 +9,7 @@ import {
 } from "./engine/forces.js";
 import { createSeededRandom } from "./random.js";
 import { SuspensionWorld } from "./engine/suspension.js";
+import { DeliveryGoal } from "./delivery-goal.js";
 
 // Create a fresh world containing a box of moving balls.
 export function createBoxScene({
@@ -219,5 +220,7 @@ export function createSpringScene({
 }
 
 export function createSuspensionScene() {
-    return new SuspensionWorld();
+    const world = new SuspensionWorld();
+    world.delivery = new DeliveryGoal();
+    return world;
 }

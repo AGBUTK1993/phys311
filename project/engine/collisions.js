@@ -1,28 +1,42 @@
 // Keep a moving circle inside rectangular boundaries.
 export function resolveWalls(body, bounds, e) {
-  if (body.isStatic) return;
+  if (body.isStatic) return 0;
+  let contacts = 0;
 
   const r = body.radius;
 
   if (body.pos.x - r < bounds.xMin) {
     body.pos.x = bounds.xMin + r;
-    if (body.vel.x < 0) body.vel.x *= -e;
+    if (body.vel.x < 0) {
+      body.vel.x *= -e;
+      contacts++;
+    }
   }
 
   if (body.pos.x + r > bounds.xMax) {
     body.pos.x = bounds.xMax - r;
-    if (body.vel.x > 0) body.vel.x *= -e;
+    if (body.vel.x > 0) {
+      body.vel.x *= -e;
+      contacts++;
+    }
   }
 
   if (body.pos.y - r < bounds.yMin) {
     body.pos.y = bounds.yMin + r;
-    if (body.vel.y < 0) body.vel.y *= -e;
+    if (body.vel.y < 0) {
+      body.vel.y *= -e;
+      contacts++;
+    }
   }
 
   if (body.pos.y + r > bounds.yMax) {
     body.pos.y = bounds.yMax - r;
-    if (body.vel.y > 0) body.vel.y *= -e;
+    if (body.vel.y > 0) {
+      body.vel.y *= -e;
+      contacts++;
+    }
   }
+  return contacts;
 }
 
 // Resolve an overlapping pair. Return true if an impulse was applied.
@@ -80,6 +94,7 @@ export function resolvePair(a, b, e = 1) {
 export function resolveCollisions(world) {
   const bodies = world.bodies;
   const e = world.restitution;
+  let contacts = 0;
 
   if (!Number.isFinite(e) || e < 0 || e > 1) {
     throw new Error("Restitution must be between 0 and 1.");
@@ -87,21 +102,22 @@ export function resolveCollisions(world) {
 
   if (world.bounds !== null) {
     for (const body of bodies) {
-      resolveWalls(body, world.bounds, e);
+      contacts += resolveWalls(body, world.bounds, e);
     }
   }
 
   // Check each distinct pair once.
   for (let i = 0; i < bodies.length; i++) {
     for (let j = i + 1; j < bodies.length; j++) {
-      resolvePair(bodies[i], bodies[j], e);
+      if (resolvePair(bodies[i], bodies[j], e)) contacts++;
     }
   }
 
   // Pair corrections may have pushed a body across a boundary.
   if (world.bounds !== null) {
     for (const body of bodies) {
-      resolveWalls(body, world.bounds, e);
+      contacts += resolveWalls(body, world.bounds, e);
     }
   }
+  return contacts;
 }
