@@ -1260,17 +1260,108 @@ window.addEventListener("DOMContentLoaded", () => {
     fullscreenButton.setAttribute("aria-pressed", "false");
     gameArea.append(fullscreenButton);
 
-    fullscreenButton.disabled =
-        !document.fullscreenEnabled ||
-        typeof gameArea.requestFullscreen !== "function";
+    const touchLayout = window.matchMedia(
+        "(pointer: coarse), (max-width: 700px)"
+    );
 
-    if (fullscreenButton.disabled) {
-        fullscreenButton.title =
-            "Fullscreen is unavailable in this browser or page.";
+    function syncTouchLayout() {
+        gameArea.classList.toggle("touch-layout", touchLayout.matches);
+        clearSupportKeys();
     }
+
+    touchLayout.addEventListener("change", syncTouchLayout);
+
+    const viewControls = document.createElement("div");
+    viewControls.className = "game-view-controls";
+    viewControls.setAttribute("role", "group");
+    viewControls.setAttribute("aria-label", "View controls");
+
+    function makeViewButton(text, label, action) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "touch-view-button";
+        button.textContent = text;
+        button.setAttribute("aria-label", label);
+        button.addEventListener("click", () => {
+            clearSupportKeys();
+            action();
+            if (!gameMenu.open) focusGame();
+        });
+        return button;
+    }
+
+    function changeTouchZoom(direction) {
+        const next = Number(zoomInput.value) +
+            direction * (Number(zoomInput.step) || 0.1);
+
+        zoomInput.value = String(Math.max(
+            Number(zoomInput.min),
+            Math.min(Number(zoomInput.max), next)
+        ));
+        zoomInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    viewControls.append(
+        makeViewButton("−", "Zoom out", () => changeTouchZoom(-1)),
+        makeViewButton("+", "Zoom in", () => changeTouchZoom(1)),
+        makeViewButton("Reset view", "Reset zoom", () => {
+            resetViewButton.click();
+        }),
+        fullscreenButton
+    );
+
+    gameArea.append(viewControls);
+
+    const supportsFullscreen =
+        document.fullscreenEnabled &&
+        typeof gameArea.requestFullscreen === "function";
+
+    let expandedView = false;
+    let previousBodyOverflow = "";
+
+    function setExpandedView(expanded) {
+        expandedView = expanded;
+
+        if (expanded) {
+            previousBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = previousBodyOverflow;
+        }
+
+        gameArea.classList.toggle("is-expanded", expanded);
+        fullscreenButton.textContent = expanded
+            ? "Exit expanded"
+            : supportsFullscreen ? "Fullscreen" : "Expand";
+
+        fullscreenButton.setAttribute(
+            "aria-label",
+            expanded ? "Exit expanded game view"
+                : supportsFullscreen ? "Enter fullscreen"
+                    : "Expand game view"
+        );
+        fullscreenButton.setAttribute("aria-pressed", String(expanded));
+
+        clearSupportKeys();
+        pointer.cancelDrag();
+        launcher.cancel();
+    }
+
+    fullscreenButton.textContent =
+        supportsFullscreen ? "Fullscreen" : "Expand";
+    fullscreenButton.setAttribute(
+        "aria-label",
+        supportsFullscreen ? "Enter fullscreen" : "Expand game view"
+    );
 
     fullscreenButton.addEventListener("click", async () => {
         clearSupportKeys();
+
+        if (expandedView || !supportsFullscreen) {
+            setExpandedView(!expandedView);
+            if (!gameMenu.open) focusGame();
+            return;
+        }
 
         try {
             if (document.fullscreenElement === gameArea) {
@@ -1294,10 +1385,10 @@ window.addEventListener("DOMContentLoaded", () => {
                             navigator.keyboard.unlock();
                         }
                     } catch (error) {
-                        console.info(
-                            "Escape remains controlled by the browser.",
-                            error
-                        );
+                        setExpandedView(true);
+                        status.textContent =
+                            "Expanded game view. Use Exit expanded to return.";
+                        console.info("Using expanded view:", error);
                     }
                 }
             }
@@ -1353,7 +1444,8 @@ window.addEventListener("DOMContentLoaded", () => {
             Move
         </span>
         <span><kbd>Space</kbd> Pause</span>
-        <span><kbd>Esc</kbd> Menu</span>
+        <span><kbd>M</kbd> Menu</span>
+        <span><kbd>Esc</kbd> Close / exit</span>
     `;
 
     supportLabel.classList.add("game-support-control");
@@ -1378,6 +1470,84 @@ window.addEventListener("DOMContentLoaded", () => {
     function clearSupportKeys() {
         heldSupportKeys.clear();
     }
+
+    const touchMovement = document.createElement("div");
+    touchMovement.className = "game-touch-movement";
+    touchMovement.setAttribute("role", "group");
+    touchMovement.setAttribute("aria-label", "Move support");
+
+    function canUseTouchMovement() {
+        return sceneSelect.value === "suspension" &&
+            world &&
+            !paused &&
+            !finished &&
+            !gameMenu.open &&
+            !world.conservativeMode &&
+            !world.stoppedForSlack;
+    }
+
+    function makeMoveButton(text, direction, token) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = text;
+        button.setAttribute(
+            "aria-label",
+            direction < 0 ? "Move support left" : "Move support right"
+        );
+
+        let activePointer = null;
+
+        button.addEventListener("pointerdown", event => {
+            if (event.button !== 0 || activePointer !== null) return;
+            event.preventDefault();
+            focusGame();
+
+            if (!canUseTouchMovement()) return;
+
+            activePointer = event.pointerId;
+            button.setPointerCapture(event.pointerId);
+            heldSupportKeys.add(token);
+        });
+
+        function release(event) {
+            if (event.pointerId !== activePointer) return;
+            heldSupportKeys.delete(token);
+            activePointer = null;
+        }
+
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointercancel", release);
+        button.addEventListener("lostpointercapture", release);
+        button.addEventListener("contextmenu", event => {
+            event.preventDefault();
+        });
+
+        // Keyboard/assistive activation makes one small movement.
+        button.addEventListener("click", event => {
+            if (event.detail !== 0 || !canUseTouchMovement()) return;
+
+            supportTargetInput.value = String(Math.max(
+                Number(supportTargetInput.min),
+                Math.min(
+                    Number(supportTargetInput.max),
+                    world.supportTarget + direction * 0.1
+                )
+            ));
+            supportTargetInput.dispatchEvent(
+                new Event("input", { bubbles: true })
+            );
+        });
+
+        return button;
+    }
+
+    touchMovement.append(
+        makeMoveButton("◀ Left", -1, "touch-left"),
+        makeMoveButton("Right ▶", 1, "touch-right")
+    );
+
+    bottomControls.prepend(touchMovement);
+    syncTouchLayout();
 
     function focusGame() {
         canvas.focus({ preventScroll: true });
@@ -1447,6 +1617,12 @@ window.addEventListener("DOMContentLoaded", () => {
         // Escape closes the menu first, without resuming.
         if (gameMenu.open) {
             closeGameMenu(false);
+            return;
+        }
+
+        if (expandedView) {
+            setExpandedView(false);
+            focusGame();
             return;
         }
 
@@ -1572,11 +1748,13 @@ window.addEventListener("DOMContentLoaded", () => {
         } else {
             const left =
                 heldSupportKeys.has("a") ||
-                heldSupportKeys.has("ArrowLeft");
+                heldSupportKeys.has("ArrowLeft") ||
+                heldSupportKeys.has("touch-left");
 
             const right =
                 heldSupportKeys.has("d") ||
-                heldSupportKeys.has("ArrowRight");
+                heldSupportKeys.has("ArrowRight") ||
+                heldSupportKeys.has("touch-right");
 
             const direction = Number(right) - Number(left);
 

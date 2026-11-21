@@ -590,3 +590,151 @@ input[type="checkbox"] {
   border-radius: 0;
   outline: none;
 }
+
+/* View buttons share the existing fullscreen corner on desktop. */
+.game-view-controls {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.game-view-controls .game-fullscreen-button {
+  position: static;
+}
+
+.touch-view-button,
+.game-touch-movement {
+  display: none;
+}
+
+/* Expanded webpage view when native fullscreen is unavailable. */
+.game-area.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  overflow: auto;
+  background: #181b19;
+}
+
+.game-area.is-expanded #sim {
+  width: min(100%, calc(100dvh * 1000 / 850));
+  margin-inline: auto;
+}
+
+/* Touch and narrow screens: controls occupy their own space. */
+.game-area.touch-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-area.touch-layout #sim {
+  order: 0;
+  flex: 0 0 auto;
+}
+
+.game-area.touch-layout .game-view-controls {
+  position: static;
+  order: 1;
+  justify-content: center;
+}
+
+.game-area.touch-layout .touch-view-button {
+  display: inline-block;
+}
+
+.game-area.touch-layout .game-bottom-controls {
+  position: static;
+  order: 2;
+  transform: none;
+  width: 100%;
+  margin: 0;
+  padding: 8px;
+}
+
+.game-area.touch-layout .game-shortcuts {
+  display: none;
+}
+
+.game-area.touch-layout .game-touch-movement {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.game-touch-movement button {
+  flex: 1;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.game-area.touch-layout .game-toolbar {
+  position: static;
+  order: 3;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.game-area.touch-layout .game-toolbar > :first-child {
+  margin-right: 0;
+}
+
+.game-area.touch-layout .game-toolbar .help-button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.game-area.touch-layout .game-view-controls button,
+.game-touch-movement button {
+  min-height: 44px;
+  padding: 8px 12px;
+  font: bold 0.85rem Arial, sans-serif;
+  color: #f6e7be;
+  background: #203d42;
+  border: 2px solid #bb914b;
+  border-radius: 5px;
+}
+
+.game-area.touch-layout .game-support-control {
+  gap: 6px;
+}
+
+.game-area.touch-layout .game-support-control input {
+  min-width: 100px;
+  touch-action: pan-y;
+}
+
+/* Leave space for the dock in expanded/fullscreen touch view. */
+.game-area.touch-layout:is(:fullscreen, .is-expanded) {
+  justify-content: flex-start;
+  align-items: center;
+  overflow: auto;
+  padding: 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.game-area.touch-layout:is(:fullscreen, .is-expanded) #sim {
+  width: min(100%, calc(max(120px, 100dvh - 250px) * 1000 / 850));
+  max-width: 1000px;
+  margin-inline: auto;
+}
+
+.game-area.touch-layout:is(:fullscreen, .is-expanded)
+.game-bottom-controls {
+  max-width: 560px;
+}

@@ -86,17 +86,6 @@ export function wireKeyboardControls() {
             zoomInput.dispatchEvent(
                 new Event("input", { bubbles: true })
             );
-            event.preventDefault();
-
-            if (integratorSelect.disabled) return;
-
-            integratorSelect.selectedIndex =
-                (integratorSelect.selectedIndex + 1) %
-                integratorSelect.options.length;
-
-            integratorSelect.dispatchEvent(
-                new Event("change", { bubbles: true })
-            );
         }
     });
 }
