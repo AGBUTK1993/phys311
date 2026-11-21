@@ -759,26 +759,25 @@ input[type="checkbox"] {
   touch-action: none;
 }
 
-/* Fullscreen and expanded mode share one layout. */
+/* Fullscreen and expanded mode: world fills the viewport. */
 .game-area.game-area:is(:fullscreen, .is-expanded) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(100px, 1fr) auto auto auto;
-  gap: 6px;
+  display: block;
   width: 100%;
   height: 100dvh;
   max-width: none;
-  padding: 8px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  overflow: auto;
-  align-items: stretch;
-  justify-content: stretch;
+  padding: 0;
+  overflow: hidden;
   background: #181b19;
+
+  --hud-left: max(16px, env(safe-area-inset-left));
+  --hud-right: max(16px, env(safe-area-inset-right));
+  --hud-top: max(16px, env(safe-area-inset-top));
+  --hud-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .game-area.game-area:is(:fullscreen, .is-expanded) #sim {
-  grid-column: 1;
-  grid-row: 1;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -786,70 +785,152 @@ input[type="checkbox"] {
   max-width: none;
   margin: 0;
   aspect-ratio: auto;
+  border-radius: 0;
+  outline: none;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
-  position: static;
-  grid-column: 1;
-  grid-row: 2;
-  justify-content: center;
-}
-
-.game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls {
-  position: static;
-  grid-column: 1;
-  grid-row: 3;
-  transform: none;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 6px;
-}
-
-.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
-  position: static;
-  grid-column: 1;
-  grid-row: 4;
-  width: 100%;
+/* Menu left; Pause and Restart right. */
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-toolbar {
+  position: absolute;
+  z-index: 4;
+  top: var(--hud-top);
+  bottom: auto;
+  left: var(--hud-left);
+  right: var(--hud-right);
+  width: auto;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-toolbar > * {
+  pointer-events: auto;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-toolbar > :first-child {
+  margin-right: auto;
+}
+
+/* Zoom and exit sit beneath the top-right playback buttons. */
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-view-controls {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--hud-top) + 60px);
+  right: var(--hud-right);
+  left: auto;
+  display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: calc(100% - 32px);
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar> :first-child {
-  margin-right: 0;
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.touch-view-button {
+  display: inline-block;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded) .game-shortcuts {
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-fullscreen-button {
+  position: static;
+}
+
+/* Transparent positioning layer for the bottom controls. */
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-bottom-controls {
+  position: absolute;
+  z-index: 4;
+  inset: auto 0 0;
+  width: 100%;
+  height: 90px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-bottom-controls[hidden] {
   display: none;
 }
 
-/* Landscape: tall map with a compact control column. */
-@media (orientation: landscape) and (min-width: 600px) {
-  .game-area.game-area:is(:fullscreen, .is-expanded) {
-    grid-template-columns: minmax(0, 1fr) 220px;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-shortcuts {
+  display: none;
+}
+
+/* Compact, directly usable slider at bottom center. */
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-support-control {
+  position: absolute;
+  left: 50%;
+  bottom: var(--hud-bottom);
+  transform: translateX(-50%);
+  width: min(380px, calc(100% - 40px));
+  margin: 0;
+  padding: 8px 12px;
+  color: #f6e7be;
+  background: rgb(32 61 66 / 78%);
+  border: 1px solid #bb914b;
+  border-radius: 8px;
+  pointer-events: auto;
+}
+
+/* Touch movement buttons float at bottom left. */
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-touch-movement {
+  position: absolute;
+  left: var(--hud-left);
+  bottom: var(--hud-bottom);
+  width: 150px;
+  margin: 0;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded)
+.game-touch-movement button {
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 6px;
+  background: rgb(32 61 66 / 78%);
+}
+
+/* Leave clearance between the touch buttons and centered slider. */
+.game-area.game-area.touch-layout:is(:fullscreen, .is-expanded)
+.game-support-control {
+  width: min(360px, calc(100% - 360px));
+}
+
+/* Narrow expanded views: slider above the movement buttons. */
+@media (max-width: 700px) {
+  .game-area.game-area.touch-layout:is(:fullscreen, .is-expanded)
+  .game-support-control {
+    bottom: calc(var(--hud-bottom) + 64px);
+    width: calc(100% - 40px);
+    max-width: 380px;
   }
 
-  .game-area.game-area:is(:fullscreen, .is-expanded) #sim {
-    grid-column: 1;
-    grid-row: 1 / 4;
+  .game-area.game-area:is(:fullscreen, .is-expanded)
+  .game-toolbar {
+    gap: 5px;
   }
 
-  .game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  .game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
-    grid-column: 2;
-    grid-row: 3;
+  .game-area.game-area:is(:fullscreen, .is-expanded)
+  .game-toolbar button:not(.help-button) {
+    padding: 6px 9px;
   }
 }

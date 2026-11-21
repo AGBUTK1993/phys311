@@ -186,13 +186,20 @@ function applyViewZoom(elapsed = 0) {
 
     if (sceneSelect.value === "suspension" && world?.anchor) {
         const area = canvas.closest(".game-area");
-        const docked =
-            area?.classList.contains("touch-layout") ||
+        const expanded =
             area?.classList.contains("is-expanded") ||
             document.fullscreenElement === area;
 
+        const touchLayout =
+            area?.classList.contains("touch-layout");
+
+        const narrowExpanded =
+            expanded && window.innerWidth <= 700;
+
         const topPadding = 100;
-        const bottomPadding = docked ? 30 : 210;
+        const bottomPadding = expanded
+            ? (narrowExpanded && touchLayout ? 230 : 140)
+            : (touchLayout ? 30 : 210);
         const usableHeight = height - topPadding - bottomPadding;
 
         camera.scale = usableHeight / 8 * viewZoom;
