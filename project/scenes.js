@@ -221,6 +221,12 @@ export function createSpringScene({
 
 export function createSuspensionScene() {
     const world = new SuspensionWorld();
+    world.cameraBounds = {
+        xMin: -10,
+        xMax: 10,
+        yMin: -6,
+        yMax: 6,
+    };
     world.delivery = new DeliveryGoal();
     return world;
 }

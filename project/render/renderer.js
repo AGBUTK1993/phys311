@@ -81,16 +81,43 @@ export class Renderer {
         ctx.strokeStyle = "rgba(92, 67, 37, 0.16)";
         ctx.lineWidth = 2;
 
-        for (let row = 0, y = 0; y < h; row++, y += 85) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
+        const camera = this.camera;
+        const topLeft = camera.toWorld({ x: 0, y: 0 });
+        const bottomRight = camera.toWorld({ x: w, y: h });
+        const brickWidth = 2;
+        const brickHeight = 1;
 
-            const offset = row % 2 === 0 ? 0 : -90;
-            for (let x = offset; x < w; x += 180) {
-                ctx.moveTo(x, y);
-                ctx.lineTo(x, Math.min(y + 85, h));
+        for (
+            let row = Math.floor(bottomRight.y / brickHeight);
+            row <= Math.ceil(topLeft.y / brickHeight);
+            row++
+        ) {
+            const y = row * brickHeight;
+            const screenY = camera.toScreen({ x: 0, y }).y;
+            const nextY = camera.toScreen({
+                x: 0,
+                y: y + brickHeight,
+            }).y;
+
+            ctx.beginPath();
+            ctx.moveTo(0, screenY);
+            ctx.lineTo(w, screenY);
+
+            const offset = (Math.abs(row) % 2) * brickWidth / 2;
+            const first = Math.floor(
+                (topLeft.x - offset) / brickWidth
+            );
+            const last = Math.ceil(
+                (bottomRight.x - offset) / brickWidth
+            );
+
+            for (let col = first; col <= last; col++) {
+                const x = col * brickWidth + offset;
+                const screenX = camera.toScreen({ x, y }).x;
+                ctx.moveTo(screenX, screenY);
+                ctx.lineTo(screenX, nextY);
             }
+
             ctx.stroke();
         }
 

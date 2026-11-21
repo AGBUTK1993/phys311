@@ -37,7 +37,7 @@ export function drawHUD(ctx, world, initialEnergy, stats) {
     debugButton.textContent = debugEnabled ? "Hide debug (D)" : "Show debug (D)";
     debugButton.setAttribute("aria-pressed", String(debugEnabled));
     debugButton.addEventListener("click", toggleDebug);
-    ctx.canvas.before(debugButton);
+        document.getElementById("menuSettingsContent").append(debugButton);
   }
 
   const energy = world.totalEnergy();

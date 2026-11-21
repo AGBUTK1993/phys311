@@ -98,15 +98,22 @@ canvas.logicalWidth = 1000;
 canvas.logicalHeight = 850;
 
 function resizeCanvasBuffer() {
-    const width = canvas.getBoundingClientRect().width;
-    if (width <= 0) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const nextWidth = 850 * rect.width / rect.height;
+
+    if (Math.abs(canvas.logicalWidth - nextWidth) > 0.01) {
+        pointer.cancelDrag();
+        launcher.cancel();
+    }
+
+    canvas.logicalHeight = 850;
+    canvas.logicalWidth = nextWidth;
 
     const dpr = window.devicePixelRatio || 1;
-    const pixelWidth = Math.max(1, Math.round(width * dpr));
-    const pixelHeight = Math.max(
-        1,
-        Math.round(width * canvas.logicalHeight / canvas.logicalWidth * dpr)
-    );
+    const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+    const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
 
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
         canvas.width = pixelWidth;
@@ -155,6 +162,7 @@ zoomInput.addEventListener("input", () => {
 });
 
 resetViewButton.addEventListener("click", () => {
+    camera.followCenter = null;
     zoomInput.value = "1";
     zoomInput.dispatchEvent(new Event("input"));
 });
@@ -170,76 +178,57 @@ arrowScaleInput.addEventListener("input", () => {
     arrowScaleValue.textContent = arrowMagnification.toFixed(2);
 });
 
-function applyViewZoom() {
+let cameraWorld = null;
+
+function applyViewZoom(elapsed = 0) {
+    const width = canvas.logicalWidth;
+    const height = canvas.logicalHeight;
+
     if (sceneSelect.value === "suspension" && world?.anchor) {
-        const width = canvas.logicalWidth;
-        const height = canvas.logicalHeight;
-        const ropeLength = world.length;
-        const loadRadius = world.load.radius;
+        const area = canvas.closest(".game-area");
+        const docked =
+            area?.classList.contains("touch-layout") ||
+            area?.classList.contains("is-expanded") ||
+            document.fullscreenElement === area;
 
-        // Fixed bounds prevent the camera from chasing the swinging load.
-        // Include the support's full travel and the rope's full reach.
-        const travelMin = -3;
-        const travelMax = 3;
-        const margin = loadRadius + 0.35;
-
-        let xMin = travelMin - ropeLength - margin;
-        let xMax = travelMax + ropeLength + margin;
-        let yMin = world.anchor.pos.y - ropeLength - margin;
-        let yMax = world.anchor.pos.y + ropeLength + margin;
-
-        // Include the delivery region if it extends beyond those bounds.
-        const zone = world.delivery?.zone;
-
-        if (zone) {
-            xMin = Math.min(xMin, zone.xMin - margin);
-            xMax = Math.max(xMax, zone.xMax + margin);
-            yMin = Math.min(yMin, zone.yMin - margin);
-            yMax = Math.max(yMax, zone.yMax + margin);
-        }
-
-        const leftPadding = 45;
-        const rightPadding = 45;
-        const topPadding = 90;
-
-        // Reserve space for the bottom controls, including narrow screens.
-        const bottomPadding = 210;
-
-        const usableWidth = width - leftPadding - rightPadding;
+        const topPadding = 100;
+        const bottomPadding = docked ? 30 : 210;
         const usableHeight = height - topPadding - bottomPadding;
 
-        const fittedScale = Math.min(
-            usableWidth / (xMax - xMin),
-            usableHeight / (yMax - yMin)
+        camera.scale = usableHeight / 8 * viewZoom;
+
+        camera.follow(
+            {
+                x: world.load.pos.x,
+                // Favor the artifact while keeping room for the support.
+                y: 0.6 * world.load.pos.y +
+                    0.4 * world.anchor.pos.y,
+            },
+            world.cameraBounds,
+            width,
+            usableHeight,
+            elapsed,
+            cameraWorld !== world
         );
 
-        const worldCenterX = (xMin + xMax) / 2;
-        const worldCenterY = (yMin + yMax) / 2;
-        const screenCenterX = leftPadding + usableWidth / 2;
-        const screenCenterY = topPadding + usableHeight / 2;
-
-        camera.scale = fittedScale * viewZoom;
-        camera.originX =
-            screenCenterX - worldCenterX * camera.scale;
-        camera.originY =
-            screenCenterY + worldCenterY * camera.scale;
-
+        camera.originY += topPadding;
+        cameraWorld = world;
         return;
     }
-    // Original camera settings for each scene at 1× zoom.
-    const baseScale = 40;
+
+    // Fit the other simulations to their original reference view.
+    cameraWorld = null;
+    camera.followCenter = null;
+
+    const fit = Math.min(width / 1000, height / 850);
     const baseOriginX = sceneSelect.value === "box" ? 100 : 500;
     const baseOriginY = sceneSelect.value === "box" ? 800 : 530;
 
-    const centerX = canvas.logicalWidth / 2;
-    const centerY = canvas.logicalHeight / 2;
-
-    // Keep the original view's center fixed while changing scale.
-    camera.scale = baseScale * viewZoom;
+    camera.scale = 40 * fit * viewZoom;
     camera.originX =
-        centerX + (baseOriginX - centerX) * viewZoom;
+        width / 2 + (baseOriginX - 500) * fit * viewZoom;
     camera.originY =
-        centerY + (baseOriginY - centerY) * viewZoom;
+        height / 2 + (baseOriginY - 425) * fit * viewZoom;
 }
 
 const pointer = new PointerInput(canvas, camera, {
@@ -861,7 +850,7 @@ function frame(timestamp) {
     const renderStart = performance.now();
 
     resizeCanvasBuffer();
-    applyViewZoom();
+    applyViewZoom(elapsed);
     renderer.draw(world);
     physicsVisuals.draw(renderer.ctx, camera, world, {
         velocity: showVelocity.checked,

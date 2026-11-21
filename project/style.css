@@ -518,7 +518,7 @@ input[type="checkbox"] {
   gap: 8px;
 }
 
-.game-area .game-toolbar > :first-child {
+.game-area .game-toolbar> :first-child {
   margin-right: auto;
 }
 
@@ -687,7 +687,7 @@ input[type="checkbox"] {
   padding: 4px 0;
 }
 
-.game-area.touch-layout .game-toolbar > :first-child {
+.game-area.touch-layout .game-toolbar> :first-child {
   margin-right: 0;
 }
 
@@ -734,7 +734,122 @@ input[type="checkbox"] {
   margin-inline: auto;
 }
 
-.game-area.touch-layout:is(:fullscreen, .is-expanded)
-.game-bottom-controls {
+.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-bottom-controls {
   max-width: 560px;
+}
+
+/* Responsive camera viewport. */
+.game-area #sim {
+  width: 100%;
+  max-width: none;
+  height: clamp(300px, 65dvh, 720px);
+  aspect-ratio: auto;
+}
+
+.game-area.touch-layout #sim {
+  height: clamp(280px, 52dvh, 620px);
+}
+
+/* Avoid double-tap page zoom on buttons. */
+.game-area button {
+  touch-action: manipulation;
+}
+
+.game-area .game-touch-movement button {
+  touch-action: none;
+}
+
+/* Fullscreen and expanded mode share one layout. */
+.game-area.game-area:is(:fullscreen, .is-expanded) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(100px, 1fr) auto auto auto;
+  gap: 6px;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  padding: 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  overflow: auto;
+  align-items: stretch;
+  justify-content: stretch;
+  background: #181b19;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) #sim {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  aspect-ratio: auto;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
+  position: static;
+  grid-column: 1;
+  grid-row: 2;
+  justify-content: center;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls {
+  position: static;
+  grid-column: 1;
+  grid-row: 3;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
+  position: static;
+  grid-column: 1;
+  grid-row: 4;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar> :first-child {
+  margin-right: 0;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-shortcuts {
+  display: none;
+}
+
+/* Landscape: tall map with a compact control column. */
+@media (orientation: landscape) and (min-width: 600px) {
+  .game-area.game-area:is(:fullscreen, .is-expanded) {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .game-area.game-area:is(:fullscreen, .is-expanded) #sim {
+    grid-column: 1;
+    grid-row: 1 / 4;
+  }
+
+  .game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+  }
+
+  .game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
+    grid-column: 2;
+    grid-row: 3;
+  }
 }
