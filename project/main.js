@@ -228,7 +228,9 @@ function applyViewZoom(elapsed = 0) {
             "(orientation: portrait)"
         ).matches;
 
-        const bottomSpace = mobileView && !portrait ? 88 : 144;
+        const bottomSpace = mobileView && world.verticalEnabled
+            ? (portrait ? 184 : 144)
+            : (mobileView && !portrait ? 88 : 144);
 
         const bottomPadding = expanded
             ? Math.min(height * 0.38, bottomSpace * screenScale)
@@ -1295,7 +1297,8 @@ setInterval(() => {
     const loadSpeed = Math.hypot(world.load.vel.x, world.load.vel.y);
 
     suspensionReadout.textContent =
-        `Support: ${world.anchor.pos.x.toFixed(2)} m | ` +
+        `Support x: ${world.anchor.pos.x.toFixed(2)} m | ` +
+        `Height: ${world.anchor.pos.y.toFixed(2)} m | ` +
         `Tension: ${world.tension.toFixed(2)} N | ` +
         `Load speed: ${loadSpeed.toFixed(3)} m/s | `;
 
@@ -1705,7 +1708,7 @@ window.addEventListener("DOMContentLoaded", () => {
             !world.stoppedForSlack;
     }
 
-    function makeMoveButton(text, direction, token) {
+    function makeMoveButton(text, direction, token, vertical = false) {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = text;
@@ -1721,7 +1724,10 @@ window.addEventListener("DOMContentLoaded", () => {
             event.preventDefault();
             focusGame();
 
-            if (!canUseTouchMovement()) return;
+            if (
+                !canUseTouchMovement() ||
+                (vertical && !world.verticalEnabled)
+            ) return;
 
             activePointer = event.pointerId;
             button.setPointerCapture(event.pointerId);
@@ -1744,6 +1750,18 @@ window.addEventListener("DOMContentLoaded", () => {
         // Keyboard/assistive activation makes one small movement.
         button.addEventListener("click", event => {
             if (event.detail !== 0 || !canUseTouchMovement()) return;
+            if (vertical) {
+                if (!world.verticalEnabled) return;
+
+                world.supportHeightTarget = Math.max(
+                    world.supportHeightMin,
+                    Math.min(
+                        world.supportHeightMax,
+                        world.supportHeightTarget + direction * 0.1
+                    )
+                );
+                return;
+            }
 
             supportTargetInput.value = String(Math.max(
                 Number(supportTargetInput.min),
@@ -1774,8 +1792,23 @@ window.addEventListener("DOMContentLoaded", () => {
     leftCorner.className = "game-corner game-corner-left";
     rightCorner.className = "game-corner game-corner-right";
 
-    leftCorner.append(leftMove, zoomOut);
-    rightCorner.append(zoomIn, rightMove);
+    const downMove = makeMoveButton(
+        "▼", -1, "touch-down", true
+    );
+    const upMove = makeMoveButton(
+        "▲", 1, "touch-up", true
+    );
+
+    downMove.setAttribute("aria-label", "Lower support");
+    upMove.setAttribute("aria-label", "Raise support");
+
+    downMove.classList.add("move-support", "vertical-move");
+    upMove.classList.add("move-support", "vertical-move");
+
+    downMove.hidden = upMove.hidden = true;
+
+    leftCorner.append(leftMove, zoomOut, downMove);
+    rightCorner.append(zoomIn, rightMove, upMove);
 
     touchMovement.className = "game-corner-controls";
     touchMovement.setAttribute("aria-label", "Movement and zoom");
@@ -1783,8 +1816,15 @@ window.addEventListener("DOMContentLoaded", () => {
     gameArea.append(touchMovement);
 
     function syncMovementButtons() {
-        leftMove.hidden = rightMove.hidden =
-            sceneSelect.value !== "suspension";
+        const isLift = sceneSelect.value === "suspension";
+
+        leftMove.hidden = rightMove.hidden = !isLift;
+
+        downMove.hidden = upMove.hidden =
+            !isLift || !world?.verticalEnabled;
+
+        downMove.disabled = upMove.disabled =
+            !canUseTouchMovement();
     }
 
     sceneSelect.addEventListener("change", syncMovementButtons);
@@ -1805,6 +1845,11 @@ window.addEventListener("DOMContentLoaded", () => {
         <dl class="controls-list">
             <dt>A / D or ← / →</dt>
             <dd>Move the support; touch buttons and slider also work.</dd>
+
+            <dt>W / S or ↑ / ↓</dt>
+            <dd>Raise/lower the support in lifting chambers.
+                On touchscreens use ▲/▼.
+                The rope stays the same length.</dd>
 
             <dt>Space</dt>
             <dd>Pause or resume.</dd>
@@ -2033,14 +2078,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
         if (sceneSelect.value !== "suspension") return;
 
-        // Reserve vertical movement without moving another interaction target.
-        if (reservedVerticalKeys.has(key)) {
+        const verticalKey = reservedVerticalKeys.has(key);
+
+        if (!horizontalKeys.has(key) && !verticalKey) return;
+
+        if (verticalKey && !world?.verticalEnabled) {
             event.preventDefault();
             event.stopImmediatePropagation();
             return;
         }
-
-        if (!horizontalKeys.has(key)) return;
 
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -2116,6 +2162,7 @@ window.addEventListener("DOMContentLoaded", () => {
             keyboardWorld = world;
             clearSupportKeys();
         }
+        syncMovementButtons();
 
         const canMove =
             document.activeElement === canvas &&
@@ -2142,6 +2189,27 @@ window.addEventListener("DOMContentLoaded", () => {
                 heldSupportKeys.has("touch-right");
 
             const direction = Number(right) - Number(left);
+
+            const up =
+                heldSupportKeys.has("w") ||
+                heldSupportKeys.has("ArrowUp") ||
+                heldSupportKeys.has("touch-up");
+
+            const down =
+                heldSupportKeys.has("s") ||
+                heldSupportKeys.has("ArrowDown") ||
+                heldSupportKeys.has("touch-down");
+
+            if (world.verticalEnabled) {
+                world.supportHeightTarget = Math.max(
+                    world.supportHeightMin,
+                    Math.min(
+                        world.supportHeightMax,
+                        world.supportHeightTarget +
+                        (Number(up) - Number(down)) * 1.0 * elapsed
+                    )
+                );
+            }
 
             if (direction !== 0) {
                 const minimum = Number(supportTargetInput.min);

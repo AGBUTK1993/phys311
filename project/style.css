@@ -1167,7 +1167,7 @@ input[type="checkbox"] {
   min-width: 0;
 }
 
-#gameMenu > .lift-level-controls {
+#gameMenu>.lift-level-controls {
   margin: 12px 0 20px;
   padding: 12px;
   border: 1px solid #b59a66;
@@ -1294,4 +1294,18 @@ input[type="checkbox"] {
 
 .game-debug-panel.energy-alert {
   border-color: #c62828;
+}
+
+/* Lift buttons sit above the existing corner controls. */
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-corner .vertical-move {
+  position: absolute;
+  bottom: calc(100% + 8px);
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-corner-left .vertical-move {
+  left: 0;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-corner-right .vertical-move {
+  right: 0;
 }

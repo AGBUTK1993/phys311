@@ -73,6 +73,14 @@ export function drawHUD(ctx, world, initialEnergy, stats) {
     `Energy-change alert: > ${DRIFT_TOLERANCE_PERCENT}%`,
   ];
 
+  if (world.verticalEnabled) {
+    lines.push(
+      `Support height: ${world.anchor.pos.y.toFixed(2)} m`,
+      `Height target: ${world.supportHeightTarget.toFixed(2)} m`,
+      `Rope tension: ${world.tension.toFixed(2)} N`
+    );
+  }
+
   if (world.rope && !world.conservativeMode) {
     lines.push("Motor/damping: energy change is expected.");
   }

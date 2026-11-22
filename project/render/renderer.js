@@ -313,6 +313,29 @@ export class Renderer {
 
         ctx.save();
 
+        // Vertical guide posts for the moving crossbeam.
+        if (world.verticalEnabled) {
+            ctx.strokeStyle = "#526467";
+            ctx.lineWidth = 0.12 * unit;
+
+            for (const x of [-3.3, 3.3]) {
+                const top = camera.toScreen({
+                    x,
+                    y: world.supportHeightMax + 0.5,
+                });
+
+                const bottom = camera.toScreen({
+                    x,
+                    y: world.supportHeightMin,
+                });
+
+                ctx.beginPath();
+                ctx.moveTo(top.x, top.y);
+                ctx.lineTo(bottom.x, bottom.y);
+                ctx.stroke();
+            }
+        }
+
         // Modern recovery equipment against the chamber backdrop.
         ctx.fillStyle = "#36464b";
         ctx.fillRect(

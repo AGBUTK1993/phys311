@@ -23,6 +23,12 @@ export class SuspensionWorld extends World {
         this.tension = 0;
         this.supportTarget = 0;
         this.supportAcceleration = 0;
+        this.verticalEnabled = false;
+        this.supportHeightTarget = 2;
+        this.supportHeightMin = 1;
+        this.supportHeightMax = 4.5;
+        this.supportVerticalAcceleration = 0;
+        this.referenceSupportY = 2;
         this.stoppedForSlack = false;
 
         this.anchor = this.addBody(new Body({
@@ -46,10 +52,10 @@ export class SuspensionWorld extends World {
         this.updateBodyState();
     }
 
-    angularAcceleration(theta, supportAcceleration = 0) {
+    angularAcceleration(theta, ax = 0, ay = 0) {
         return (
-            -this.g * Math.sin(theta) -
-            supportAcceleration * Math.cos(theta)
+            -(this.g + ay) * Math.sin(theta) -
+            ax * Math.cos(theta)
         ) / this.length;
     }
 
@@ -60,9 +66,10 @@ export class SuspensionWorld extends World {
 
         if (this.stoppedForSlack) return;
 
-        // A motor moves the support toward the requested position.
-        // Acceleration is limited; position and velocity stay continuous.
-        const positionError = this.supportTarget - this.anchor.pos.x;
+        // Horizontal motor: acceleration-limited target tracking.
+        const positionError =
+            this.supportTarget - this.anchor.pos.x;
+
         const requestedAcceleration =
             2 * positionError - 3 * this.anchor.vel.x;
 
@@ -70,7 +77,27 @@ export class SuspensionWorld extends World {
             ? 0
             : Math.max(-0.8, Math.min(0.8, requestedAcceleration));
 
+        // Vertical motor uses the same smooth target tracking.
+        this.supportHeightTarget = Math.max(
+            this.supportHeightMin,
+            Math.min(this.supportHeightMax, this.supportHeightTarget)
+        );
+
+        const heightError =
+            this.supportHeightTarget - this.anchor.pos.y;
+
+        const requestedVerticalAcceleration =
+            2 * heightError - 3 * this.anchor.vel.y;
+
+        const ay = this.conservativeMode || !this.verticalEnabled
+            ? 0
+            : Math.max(
+                -0.8,
+                Math.min(0.8, requestedVerticalAcceleration)
+            );
+
         this.supportAcceleration = ax;
+        this.supportVerticalAcceleration = ay;
         this.updateBodyState();
 
         if (this.tension <= 0) {
@@ -78,28 +105,32 @@ export class SuspensionWorld extends World {
             return;
         }
 
-        // Apply half the damping before the Verlet update.
-        const dampingFactor = Math.exp(-0.5 * this.dampingRate * dt);
+        const dampingFactor =
+            Math.exp(-0.5 * this.dampingRate * dt);
+
         this.omega *= dampingFactor;
-        // Treat the motor acceleration as constant during this small step.
-        const a0 = this.angularAcceleration(this.theta, ax);
+
+        // Hold motor acceleration constant during this small step.
+        const a0 = this.angularAcceleration(this.theta, ax, ay);
         const halfOmega = this.omega + 0.5 * dt * a0;
 
         this.anchor.pos.x +=
             this.anchor.vel.x * dt + 0.5 * ax * dt * dt;
         this.anchor.vel.x += ax * dt;
 
+        this.anchor.pos.y +=
+            this.anchor.vel.y * dt + 0.5 * ay * dt * dt;
+        this.anchor.vel.y += ay * dt;
+
         this.theta += dt * halfOmega;
 
-        const a1 = this.angularAcceleration(this.theta, ax);
+        const a1 = this.angularAcceleration(this.theta, ax, ay);
         this.omega = halfOmega + 0.5 * dt * a1;
-        // Apply the remaining half after the Verlet update.
         this.omega *= dampingFactor;
 
         this.time += dt;
         this.updateBodyState();
 
-        // End the run when the taut-rope model ceases to apply.
         if (this.tension <= 0) {
             this.stoppedForSlack = true;
         }
@@ -115,11 +146,12 @@ export class SuspensionWorld extends World {
 
         body.vel.x =
             this.anchor.vel.x + this.length * c * this.omega;
-        body.vel.y = this.length * s * this.omega;
+        body.vel.y =
+            this.anchor.vel.y + this.length * s * this.omega;
 
         this.tension = body.m * (
             this.length * this.omega * this.omega +
-            this.g * c -
+            (this.g + this.supportVerticalAcceleration) * c -
             this.supportAcceleration * s
         );
 
@@ -133,8 +165,10 @@ export class SuspensionWorld extends World {
     }
 
     potentialEnergy() {
-        // Zero potential energy at the lowest point.
+        // Keep a fixed energy reference as the support rises or falls.
         return this.load.m * this.g * this.length *
-            (1 - Math.cos(this.theta));
+            (1 - Math.cos(this.theta)) +
+            this.load.m * this.g *
+            (this.anchor.pos.y - this.referenceSupportY);
     }
 }

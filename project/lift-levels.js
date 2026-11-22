@@ -42,4 +42,19 @@ export const LIFT_LEVELS = [
             yMax: -0.4,
         },
     },
+    {
+        id: "upper-gallery",
+        name: "4 — Upper gallery",
+        hint: "Move right and raise the rail with W/↑ or the ▲ touch button. S/↓ or ▼ lowers it. Settle the whole artifact inside the raised zone.",
+        startX: -2,
+        theta: 0.1,
+        dampingRate: 0.35,
+        verticalEnabled: true,
+        zone: {
+            xMin: 1.2,
+            xMax: 2.8,
+            yMin: 0.6,
+            yMax: 1.8,
+        },
+    },
 ];

@@ -238,6 +238,13 @@ export function createSuspensionScene(levelIndex = 0) {
     world.theta = level.theta;
     world.dampingRate = level.dampingRate;
 
+        world.verticalEnabled = Boolean(level.verticalEnabled);
+    world.supportHeightTarget = world.anchor.pos.y;
+
+    if (world.verticalEnabled) {
+        world.cameraBounds.yMax = 8;
+    }
+
     world.delivery = new DeliveryGoal();
     world.delivery.zone = { ...level.zone };
 
