@@ -8,7 +8,7 @@ import {
     Spring,
 } from "./engine/forces.js";
 import { createSeededRandom } from "./random.js";
-import { SuspensionWorld } from "./engine/suspension.js";
+import { WinchWorld } from "./engine/winch.js";
 import { DeliveryGoal } from "./delivery-goal.js";
 import { LIFT_LEVELS } from "./lift-levels.js";
 
@@ -221,7 +221,7 @@ export function createSpringScene({
 }
 
 export function createSuspensionScene(levelIndex = 0) {
-    const world = new SuspensionWorld();
+    const world = new WinchWorld();
     world.cameraBounds = {
         xMin: -10,
         xMax: 10,

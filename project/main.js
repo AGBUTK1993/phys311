@@ -1,3 +1,5 @@
+import { createRopeControls } from "./rope-controls.js";
+let syncRopeControls = () => { };
 import "./checks.js";
 import { LIFT_LEVELS } from "./lift-levels.js";
 
@@ -805,7 +807,25 @@ function advanceOneStep() {
         }
 
         // Count delivery time in physics steps, not rendered frames.
-        if (world.delivery && !world.conservativeMode) {
+        if (world.ropeState === "broken") {
+            status.textContent =
+                "Rope broken. Restart this chamber to try again.";
+
+            // Show the release and fall before ending the attempt.
+            if (world.time - world.breakTime >= 1.5) {
+                paused = true;
+                finished = true;
+                accumulator = 0;
+                pauseButton.disabled = true;
+                return false;
+            }
+        }
+
+        if (
+            world.delivery &&
+            !world.conservativeMode &&
+            world.ropeState !== "broken"
+        ) {
             world.delivery.update(world.load, DT);
 
             if (world.delivery.won) {
@@ -953,6 +973,7 @@ function frame(timestamp) {
     drawPointerOverlay(renderer.ctx, camera, pointer);
 
     syncChamberPresentation();
+    syncRopeControls();
 
     stats.renderMs = performance.now() - renderStart;
 
@@ -1651,6 +1672,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // Bottom-center support slider and shortcut strip.
     const bottomControls = document.createElement("div");
     bottomControls.className = "game-bottom-controls";
+    bottomControls.id = "gameSliderPanel";
 
     const shortcuts = document.createElement("div");
     shortcuts.className = "game-shortcuts";
@@ -1673,6 +1695,28 @@ window.addEventListener("DOMContentLoaded", () => {
     supportLabel.classList.add("game-support-control");
     bottomControls.append(shortcuts, supportLabel);
     gameArea.append(bottomControls);
+
+    syncRopeControls = createRopeControls({
+        getWorld: () => world,
+
+        canAdjust: () =>
+            sceneSelect.value === "suspension" &&
+            !world.conservativeMode &&
+            !finished,
+
+        bottom: bottomControls,
+        settings: settingsContent,
+    });
+
+    // Keep portrait touch buttons above the actual slider-panel height.
+    const sliderPanelObserver = new ResizeObserver(() => {
+        gameArea.style.setProperty(
+            "--slider-panel-height",
+            `${bottomControls.getBoundingClientRect().height}px`
+        );
+    });
+
+    sliderPanelObserver.observe(bottomControls);
 
     function syncGameOverlay() {
         bottomControls.hidden = sceneSelect.value !== "suspension";
@@ -1856,6 +1900,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
             <dt>R</dt>
             <dd>Restart this scene.</dd>
+
+            <dt>U / J or numpad 8 / 2</dt>
+<dd>
+    Hold U or numpad 8 to shorten the rope.
+    Hold J or numpad 2 to lengthen it.
+    The rope-length slider also supports mouse, touch,
+    and keyboard arrows when focused.
+</dd>
 
             <dt>F</dt>
             <dd>Toggle fullscreen or expanded view.</dd>
@@ -2064,6 +2116,20 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }, { capture: true });
 
+    function movementKey(event) {
+        // Physical numpad keys remain identifiable with Num Lock off.
+        if (
+            event.code === "Numpad8" ||
+            event.code === "Numpad2"
+        ) {
+            return event.code;
+        }
+
+        return event.key.length === 1
+            ? event.key.toLowerCase()
+            : event.key;
+    }
+
     // A finer slider step keeps its displayed position smooth.
     supportTargetInput.step = "0.01";
 
@@ -2072,15 +2138,24 @@ window.addEventListener("DOMContentLoaded", () => {
     canvas.addEventListener("keydown", event => {
         if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-        const key = event.key.length === 1
-            ? event.key.toLowerCase()
-            : event.key;
+        const key = movementKey(event);
 
         if (sceneSelect.value !== "suspension") return;
 
         const verticalKey = reservedVerticalKeys.has(key);
 
-        if (!horizontalKeys.has(key) && !verticalKey) return;
+        const ropeKey = [
+            "u",
+            "j",
+            "Numpad8",
+            "Numpad2",
+        ].includes(key);
+
+        if (
+            !horizontalKeys.has(key) &&
+            !verticalKey &&
+            !ropeKey
+        ) return;
 
         if (verticalKey && !world?.verticalEnabled) {
             event.preventDefault();
@@ -2105,9 +2180,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }, { capture: true });
 
     window.addEventListener("keyup", event => {
-        const key = event.key.length === 1
-            ? event.key.toLowerCase()
-            : event.key;
+        const key = movementKey(event);
 
         heldSupportKeys.delete(key);
     }, { capture: true });
@@ -2189,6 +2262,25 @@ window.addEventListener("DOMContentLoaded", () => {
                 heldSupportKeys.has("touch-right");
 
             const direction = Number(right) - Number(left);
+
+            if (world.ropeState && world.ropeState !== "broken") {
+                const reelIn =
+                    heldSupportKeys.has("u") ||
+                    heldSupportKeys.has("Numpad8");
+
+                const payOut =
+                    heldSupportKeys.has("j") ||
+                    heldSupportKeys.has("Numpad2");
+
+                world.lengthTarget = Math.max(
+                    world.minLength,
+                    Math.min(
+                        world.maxLength,
+                        world.lengthTarget +
+                        (Number(payOut) - Number(reelIn)) * 0.5 * elapsed
+                    )
+                );
+            }
 
             const up =
                 heldSupportKeys.has("w") ||

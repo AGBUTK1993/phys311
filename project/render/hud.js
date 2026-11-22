@@ -73,6 +73,18 @@ export function drawHUD(ctx, world, initialEnergy, stats) {
     `Energy-change alert: > ${DRIFT_TOLERANCE_PERCENT}%`,
   ];
 
+  if (world.ropeState) {
+    lines.push(
+      `Rope state: ${world.ropeState}`,
+      `Rope length: ${world.length.toFixed(3)} m`,
+      `Length target: ${world.lengthTarget.toFixed(3)} m`,
+      `Winch speed: ${world.lengthRate.toFixed(3)} m/s`,
+      `Tension / strength: ${world.tension.toFixed(2)} / ` +
+      `${world.breakStrength.toFixed(2)} N`,
+      `Last catch impulse: ${world.lastCatchImpulse.toFixed(3)} N s`
+    );
+  }
+
   if (world.verticalEnabled) {
     lines.push(
       `Support height: ${world.anchor.pos.y.toFixed(2)} m`,

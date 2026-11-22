@@ -1309,3 +1309,99 @@ input[type="checkbox"] {
 .game-area:is(:fullscreen, .is-expanded) .game-corner-right .vertical-move {
   right: 0;
 }
+
+/* One panel: support slider, rope slider, then rope feedback. */
+.game-area #gameSliderPanel {
+  position: absolute;
+  z-index: 7;
+  inset: auto;
+  left: 50%;
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 240px));
+  max-width: none;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px #0005;
+  pointer-events: auto;
+}
+
+/* Override the older fullscreen positioning of individual sliders. */
+.game-area #gameSliderPanel>.game-support-control,
+.game-area #gameSliderPanel>.rope-length-control {
+  position: static;
+  inset: auto;
+  transform: none;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 55px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font: 12px Arial, sans-serif;
+  pointer-events: auto;
+}
+
+.game-area #gameSliderPanel label input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  accent-color: #d6b56e;
+}
+
+.game-area #gameSliderPanel label output {
+  min-width: 0;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-area #gameSliderPanel>.rope-feedback {
+  position: static;
+  inset: auto;
+  transform: none;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 2px 0 0;
+  background: transparent;
+  color: #f6e7be;
+  font: 12px Arial, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+
+.game-area #gameSliderPanel[hidden],
+.game-area #gameSliderPanel>[hidden] {
+  display: none;
+}
+
+/* Upright phones: full-width panel, touch buttons above it. */
+@media (orientation: portrait) {
+  .game-area.touch-layout #gameSliderPanel {
+    width: calc(100% - 24px);
+    max-width: 440px;
+  }
+
+  .game-area.game-area.touch-layout .game-corner {
+    bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 120px) + 8px);
+  }
+}

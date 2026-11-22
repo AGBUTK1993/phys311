@@ -539,17 +539,42 @@ export class Renderer {
         // Draw the suspension rope behind its endpoints.
         if (world.rope) {
             this.drawSuspensionRig(world);
-            const start = camera.toScreen(world.rope.a.pos);
-            const end = camera.toScreen(world.rope.b.pos);
 
-            ctx.save();
-            ctx.strokeStyle = "#76552b";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
-            ctx.stroke();
-            ctx.restore();
+            if (world.ropeState !== "broken") {
+                const start = camera.toScreen(world.rope.a.pos);
+                const end = camera.toScreen(world.rope.b.pos);
+
+                ctx.save();
+                ctx.strokeStyle = "#76552b";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+
+                if (world.ropeState === "slack") {
+                    const distance = Math.hypot(
+                        world.load.pos.x - world.anchor.pos.x,
+                        world.load.pos.y - world.anchor.pos.y
+                    );
+
+                    // Visual slack curve; not a simulated massive rope.
+                    const sag = Math.min(
+                        100,
+                        Math.max(12, (world.length - distance) * camera.scale)
+                    );
+
+                    ctx.quadraticCurveTo(
+                        (start.x + end.x) / 2 + sag * 0.35,
+                        (start.y + end.y) / 2 + sag,
+                        end.x,
+                        end.y
+                    );
+                } else {
+                    ctx.lineTo(end.x, end.y);
+                }
+
+                ctx.stroke();
+                ctx.restore();
+            }
         }
 
         // Draw the current body positions.
