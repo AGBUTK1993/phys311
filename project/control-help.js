@@ -14,8 +14,6 @@ const descriptions = {
         : scene() === "springs" ? "Choose Grab with spring to pull a mass using a damped spring. Release preserves its current velocity. Launch mode is only available in the ball box."
             : "Grab with spring pulls an existing ball. Launch a ball: press empty space inside the box, pull backward, and release. Longer pulls increase speed up to 12 m/s. The dashed preview is free flight for up to 3 seconds; it stops at a wall and ignores other balls. Keyboard aiming is explained below."],
     durationSelect: ["Run duration", () => "Simulated seconds, not wall-clock time. Apply a new duration with Restart or a scene change. Unlimited has no timer stop. Seeded run and Replay always use 60 simulated seconds."],
-    restartButton: ["Restart", () => "Rebuild this scene, apply the selected duration, and reset time and diagnostic comparisons. This clears launched balls and ends a seeded/replay run."],
-    pauseButton: ["Pause or resume", () => "Pause or resume physics. Rendering stays active so aiming and view changes still work. After completion, use Restart. Shortcut: Space when no form control is focused."],
     stepButton: ["Single step", () => "Pause and advance exactly one fixed physics step (1/240 second). Shortcut: period (.) when no form control is focused."],
     speedInput: ["Playback speed", () => "0.25×–2× changes how quickly simulated time advances. The physics step stays fixed at 1/240 second. Shortcut: − or + when no form control is focused."],
     seededRunButton: ["Seeded run", () => "Start a reproducible 60-second ball-box run with seed 31109 and zero downward gravity. Physical controls are locked during the test; Restart cancels it. The final state becomes a reference."],

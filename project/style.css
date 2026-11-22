@@ -769,10 +769,11 @@ input[type="checkbox"] {
   overflow: hidden;
   background: #181b19;
 
-  --hud-left: max(16px, env(safe-area-inset-left));
-  --hud-right: max(16px, env(safe-area-inset-right));
-  --hud-top: max(16px, env(safe-area-inset-top));
-  --hud-bottom: max(16px, env(safe-area-inset-bottom));
+  --hud-left: max(8px, env(safe-area-inset-left));
+  --hud-right: max(8px, env(safe-area-inset-right));
+  --hud-top: max(8px, env(safe-area-inset-top));
+  --hud-bottom: max(8px, env(safe-area-inset-bottom));
+  --banner-height: calc(var(--hud-top) + 52px);
 }
 
 .game-area.game-area:is(:fullscreen, .is-expanded) #sim {
@@ -786,73 +787,132 @@ input[type="checkbox"] {
   margin: 0;
   aspect-ratio: auto;
   border-radius: 0;
-  outline: none;
 }
 
-/* Menu left; Pause and Restart right. */
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-toolbar {
+.game-banner-size {
+  display: none;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-banner-size {
+  display: block;
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--banner-height);
+  padding-top: var(--hud-top);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar,
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
   position: absolute;
   z-index: 4;
   top: var(--hud-top);
   bottom: auto;
-  left: var(--hud-left);
-  right: var(--hud-right);
-  width: auto;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-wrap: nowrap;
-  justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  pointer-events: none;
+  gap: 6px;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-toolbar > * {
-  pointer-events: auto;
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
+  left: var(--hud-left);
+  right: auto;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
+  left: auto;
+  right: var(--hud-right);
 }
 
 .game-area.game-area:is(:fullscreen, .is-expanded)
 .game-toolbar > :first-child {
-  margin-right: auto;
+  margin-right: 0;
 }
 
-/* Zoom and exit sit beneath the top-right playback buttons. */
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-view-controls {
-  position: absolute;
-  z-index: 4;
-  top: calc(var(--hud-top) + 60px);
-  right: var(--hud-right);
-  left: auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-  max-width: calc(100% - 32px);
+.game-area.game-area:is(:fullscreen, .is-expanded) button {
+  min-height: 44px;
+  padding: 6px 9px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.touch-view-button {
+.game-area.game-area:is(:fullscreen, .is-expanded) .touch-view-button {
   display: inline-block;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-fullscreen-button {
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-fullscreen-button {
   position: static;
 }
 
-/* Transparent positioning layer for the bottom controls. */
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-bottom-controls {
+/* Movement and zoom: opposite bottom corners. */
+.game-corner-controls {
+  display: none;
+}
+
+.game-area.touch-layout .game-corner-controls {
+  display: flex;
+  justify-content: space-between;
+  order: 2;
+}
+
+.game-corner {
+  display: flex;
+  gap: 6px;
+}
+
+.game-corner button {
+  min-width: 44px;
+  min-height: 44px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 2px solid #bb914b;
+  border-radius: 6px;
+}
+
+.game-area .move-support {
+  touch-action: none;
+}
+
+.game-area:not(.touch-layout) .move-support,
+.game-area .move-support[hidden] {
+  display: none;
+}
+
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-corner-controls {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-corner {
+  position: absolute;
+  bottom: var(--hud-bottom);
+  pointer-events: auto;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-corner-left {
+  left: var(--hud-left);
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-corner-right {
+  right: var(--hud-right);
+}
+
+/* Keep the slider usable above the corner buttons. */
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls {
   position: absolute;
   z-index: 4;
   inset: auto 0 0;
   width: 100%;
-  height: 90px;
   max-width: none;
+  height: 128px;
   margin: 0;
   padding: 0;
   transform: none;
@@ -863,74 +923,98 @@ input[type="checkbox"] {
 }
 
 .game-area.game-area:is(:fullscreen, .is-expanded)
-.game-bottom-controls[hidden] {
+.game-bottom-controls[hidden],
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-shortcuts {
   display: none;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-shortcuts {
-  display: none;
-}
-
-/* Compact, directly usable slider at bottom center. */
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-support-control {
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-support-control {
   position: absolute;
   left: 50%;
-  bottom: var(--hud-bottom);
+  bottom: calc(var(--hud-bottom) + 56px);
   transform: translateX(-50%);
-  width: min(380px, calc(100% - 40px));
+  box-sizing: border-box;
+  width: min(380px, calc(100% - 24px));
   margin: 0;
   padding: 8px 12px;
-  color: #f6e7be;
-  background: rgb(32 61 66 / 78%);
-  border: 1px solid #bb914b;
+  background: rgba(32, 66, 69, 0.85);
+  border: 1px solid #b89552;
   border-radius: 8px;
   pointer-events: auto;
 }
 
-/* Touch movement buttons float at bottom left. */
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-touch-movement {
-  position: absolute;
-  left: var(--hud-left);
-  bottom: var(--hud-bottom);
-  width: 150px;
-  margin: 0;
-  gap: 8px;
-  pointer-events: auto;
-}
-
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-touch-movement button {
-  min-width: 0;
-  min-height: 52px;
-  padding: 8px 6px;
-  background: rgb(32 61 66 / 78%);
-}
-
-/* Leave clearance between the touch buttons and centered slider. */
-.game-area.game-area.touch-layout:is(:fullscreen, .is-expanded)
-.game-support-control {
-  width: min(360px, calc(100% - 360px));
-}
-
-/* Narrow expanded views: slider above the movement buttons. */
+/* Portrait: sun, gameplay buttons, then view buttons. */
 @media (max-width: 700px) {
-  .game-area.game-area.touch-layout:is(:fullscreen, .is-expanded)
-  .game-support-control {
-    bottom: calc(var(--hud-bottom) + 64px);
-    width: calc(100% - 40px);
-    max-width: 380px;
+  .game-area.game-area:is(:fullscreen, .is-expanded) {
+    --banner-height: calc(var(--hud-top) + 136px);
   }
 
-  .game-area.game-area:is(:fullscreen, .is-expanded)
-  .game-toolbar {
-    gap: 5px;
+  .game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar {
+    top: calc(var(--hud-top) + 36px);
+    left: var(--hud-left);
+    right: var(--hud-right);
+    justify-content: space-between;
   }
 
-  .game-area.game-area:is(:fullscreen, .is-expanded)
-  .game-toolbar button:not(.help-button) {
-    padding: 6px 9px;
+  .game-area.game-area:is(:fullscreen, .is-expanded) .game-view-controls {
+    top: calc(var(--hud-top) + 84px);
+    left: var(--hud-left);
+    right: var(--hud-right);
+    justify-content: space-between;
   }
+}
+
+/* Optional information panels work inside fullscreen too. */
+.game-area .game-info-panel {
+  position: absolute;
+  z-index: 8;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(620px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 12px;
+  margin: 0;
+  background: #f4ead2;
+  color: #243d3f;
+  border: 2px solid #b89552;
+  border-radius: 8px;
+}
+
+.game-area .game-info-panel[hidden] {
+  display: none;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-info-panel {
+  top: calc(var(--banner-height) + 8px);
+  max-height: calc(100% - var(--banner-height) - 16px);
+}
+
+.game-area #energyPanel {
+  margin: 0;
+}
+
+.game-info-panel h2 {
+  margin: 0 80px 12px 0;
+}
+
+.game-info-panel .panel-close {
+  float: right;
+}
+
+.game-info-panel #energyCanvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+}
+
+.controls-list dt {
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.controls-list dd {
+  margin-left: 0;
 }

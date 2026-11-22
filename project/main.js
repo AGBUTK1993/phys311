@@ -193,14 +193,24 @@ function applyViewZoom(elapsed = 0) {
         const touchLayout =
             area?.classList.contains("touch-layout");
 
-        const narrowExpanded =
-            expanded && window.innerWidth <= 700;
+        const screenScale =
+            height / canvas.getBoundingClientRect().height;
 
-        const topPadding = 100;
+        const bannerHeight = area
+            ?.querySelector(".game-banner-size")
+            ?.getBoundingClientRect().height || 0;
+
+        const topPadding = expanded
+            ? (bannerHeight + 12) * screenScale
+            : 100;
+
         const bottomPadding = expanded
-            ? (narrowExpanded && touchLayout ? 230 : 140)
+            ? Math.min(height * 0.38, 144 * screenScale)
             : (touchLayout ? 30 : 210);
-        const usableHeight = height - topPadding - bottomPadding;
+
+        const usableHeight = Math.max(
+            80, height - topPadding - bottomPadding
+        );
 
         camera.scale = usableHeight / 8 * viewZoom;
 
@@ -1247,6 +1257,10 @@ window.addEventListener("DOMContentLoaded", () => {
     gameArea.append(toolbar, canvas);
     // Fullscreen includes HTML controls and the settings dialog.
     gameArea.append(gameMenu);
+    const bannerSize = document.createElement("div");
+    bannerSize.className = "game-banner-size";
+    bannerSize.setAttribute("aria-hidden", "true");
+    gameArea.append(bannerSize);
 
     const fullscreenButton = document.createElement("button");
     fullscreenButton.type = "button";
@@ -1297,9 +1311,14 @@ window.addEventListener("DOMContentLoaded", () => {
         zoomInput.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
+    const zoomOut = makeViewButton(
+        "−", "Zoom out", () => changeTouchZoom(-1)
+    );
+    const zoomIn = makeViewButton(
+        "+", "Zoom in", () => changeTouchZoom(1)
+    );
+
     viewControls.append(
-        makeViewButton("−", "Zoom out", () => changeTouchZoom(-1)),
-        makeViewButton("+", "Zoom in", () => changeTouchZoom(1)),
         makeViewButton("Reset view", "Reset zoom", () => {
             resetViewButton.click();
         }),
@@ -1441,6 +1460,8 @@ window.addEventListener("DOMContentLoaded", () => {
         </span>
         <span><kbd>Space</kbd> Pause</span>
         <span><kbd>M</kbd> Menu</span>
+                <span><kbd>C</kbd> Controls</span>
+        <span><kbd>G</kbd> Graph</span>
         <span><kbd>Esc</kbd> Close / exit</span>
     `;
 
@@ -1537,17 +1558,154 @@ window.addEventListener("DOMContentLoaded", () => {
         return button;
     }
 
-    touchMovement.append(
-        makeMoveButton("◀ Left", -1, "touch-left"),
-        makeMoveButton("Right ▶", 1, "touch-right")
-    );
+    const leftMove = makeMoveButton("◀", -1, "touch-left");
+    const rightMove = makeMoveButton("▶", 1, "touch-right");
 
-    bottomControls.prepend(touchMovement);
+    leftMove.setAttribute("aria-label", "Move support left");
+    rightMove.setAttribute("aria-label", "Move support right");
+    leftMove.classList.add("move-support");
+    rightMove.classList.add("move-support");
+
+    const leftCorner = document.createElement("div");
+    const rightCorner = document.createElement("div");
+
+    leftCorner.className = "game-corner game-corner-left";
+    rightCorner.className = "game-corner game-corner-right";
+
+    leftCorner.append(leftMove, zoomOut);
+    rightCorner.append(zoomIn, rightMove);
+
+    touchMovement.className = "game-corner-controls";
+    touchMovement.setAttribute("aria-label", "Movement and zoom");
+    touchMovement.append(leftCorner, rightCorner);
+    gameArea.append(touchMovement);
+
+    function syncMovementButtons() {
+        leftMove.hidden = rightMove.hidden =
+            sceneSelect.value !== "suspension";
+    }
+
+    sceneSelect.addEventListener("change", syncMovementButtons);
+    syncMovementButtons();
     syncTouchLayout();
 
     function focusGame() {
         canvas.focus({ preventScroll: true });
     }
+
+    const controlsPanel = document.createElement("section");
+    controlsPanel.id = "controlsPanel";
+    controlsPanel.className = "game-info-panel";
+    controlsPanel.hidden = true;
+    controlsPanel.setAttribute("aria-labelledby", "controlsHeading");
+
+    const controlsText = `
+        <dl class="controls-list">
+            <dt>A / D or ← / →</dt>
+            <dd>Move the support; touch buttons and slider also work.</dd>
+
+            <dt>Space</dt>
+            <dd>Pause or resume.</dd>
+
+            <dt>R</dt>
+            <dd>Restart this scene.</dd>
+
+            <dt>F</dt>
+            <dd>Toggle fullscreen or expanded view.</dd>
+
+            <dt>+ / −</dt>
+            <dd>Zoom in or out.</dd>
+
+            <dt>M</dt>
+            <dd>Open or close the menu.</dd>
+
+            <dt>C</dt>
+            <dd>Show or hide these controls.</dd>
+
+            <dt>G</dt>
+            <dd>Show or hide the energy graph.</dd>
+
+            <dt>Esc</dt>
+            <dd>Close the menu or an information panel without resuming;
+                otherwise exit fullscreen/expanded view.</dd>
+        </dl>
+        <p>Click the game to use shortcuts.
+           Settings retain normal keyboard input.</p>
+    `;
+
+    controlsPanel.innerHTML =
+        '<h2 id="controlsHeading">Controls</h2>' + controlsText;
+
+    energyPanel.classList.add("game-info-panel");
+    gameArea.append(controlsPanel, energyPanel);
+
+    function setGraphVisible(visible) {
+        showEnergy.checked = visible;
+        showEnergy.dispatchEvent(
+            new Event("change", { bubbles: true })
+        );
+    }
+
+    function toggleControls() {
+        controlsPanel.hidden = !controlsPanel.hidden;
+
+        if (!controlsPanel.hidden) setGraphVisible(false);
+        focusGame();
+    }
+
+    function toggleGraph() {
+        controlsPanel.hidden = true;
+        setGraphVisible(!showEnergy.checked);
+        focusGame();
+    }
+
+    showEnergy.addEventListener("change", () => {
+        if (showEnergy.checked) controlsPanel.hidden = true;
+    });
+
+    for (const [panel, close] of [
+        [controlsPanel, () => { controlsPanel.hidden = true; }],
+        [energyPanel, () => setGraphVisible(false)],
+    ]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "panel-close";
+        button.textContent = "Close";
+
+        button.addEventListener("click", () => {
+            close();
+            focusGame();
+        });
+
+        panel.prepend(button);
+    }
+
+    const menuControls = document.createElement("details");
+    menuControls.innerHTML =
+        "<summary>Controls and shortcuts</summary>" + controlsText;
+
+    const panelButtons = document.createElement("div");
+    panelButtons.className = "menu-actions";
+
+    for (const [label, action] of [
+        ["Show controls", toggleControls],
+        ["Show / hide graph", toggleGraph],
+    ]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+
+        button.addEventListener("click", () => {
+            closeGameMenu(false);
+            action();
+        });
+
+        panelButtons.append(button);
+    }
+
+    document.getElementById("menuClose").before(
+        menuControls, panelButtons
+    );
 
     // Handle menu shortcuts before the canvas and dialog handlers.
     window.addEventListener("keydown", event => {
@@ -1575,7 +1733,7 @@ window.addEventListener("DOMContentLoaded", () => {
             );
 
         if (key !== "escape" && editingControl) return;
-        if (!["f", "m", "b", "escape"].includes(key)) return;
+        if (!["f", "m", "b", "c", "g", "escape"].includes(key)) return;
 
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -1584,6 +1742,26 @@ window.addEventListener("DOMContentLoaded", () => {
         if (event.repeat) return;
 
         clearSupportKeys();
+
+        if (key === "c" || key === "g") {
+            if (gameMenu.open) closeGameMenu(false);
+
+            if (key === "c") toggleControls();
+            else toggleGraph();
+
+            return;
+        }
+
+        if (
+            key === "escape" &&
+            !gameMenu.open &&
+            (!controlsPanel.hidden || !energyPanel.hidden)
+        ) {
+            controlsPanel.hidden = true;
+            setGraphVisible(false);
+            focusGame();
+            return;
+        }
 
         if (key === "f") {
             fullscreenButton.click();

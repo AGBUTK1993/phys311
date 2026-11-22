@@ -121,18 +121,49 @@ export class Renderer {
             ctx.stroke();
         }
 
+        // Match the HTML toolbar's reserved screen space.
+        const banner = this.canvas.closest(".game-area")
+            ?.querySelector(".game-banner-size");
+
+        const bannerPixels =
+            banner?.getBoundingClientRect().height || 0;
+
+        const screenScale =
+            h / this.canvas.getBoundingClientRect().height;
+
+        const bandHeight = bannerPixels
+            ? bannerPixels * screenScale
+            : 92;
+
+        const headerTop = bannerPixels
+            ? parseFloat(getComputedStyle(banner).paddingTop)
+            : 0;
+
+        const narrow = window.matchMedia(
+            "(max-width: 700px)"
+        ).matches;
+
         // Decorative painted bands.
         ctx.fillStyle = "#294d50";
-        ctx.fillRect(0, 0, w, 92);
+        ctx.fillRect(0, 0, w, bandHeight);
         ctx.fillRect(0, h - 24, w, 24);
 
         ctx.fillStyle = "#c49a50";
-        ctx.fillRect(0, 90, w, 4);
+        ctx.fillRect(0, bandHeight - 2, w, 4);
         ctx.fillRect(0, h - 27, w, 3);
 
         // Stylized winged solar motif, not a written inscription.
         ctx.save();
-        ctx.translate(w / 2, 45);
+        ctx.translate(
+            w / 2,
+            bannerPixels
+                ? (headerTop + (narrow ? 16 : 22)) * screenScale
+                : 45
+        );
+
+        if (bannerPixels) {
+            ctx.scale(0.45 * screenScale, 0.45 * screenScale);
+        }
         ctx.strokeStyle = "#d6b56e";
         ctx.lineWidth = 3;
 
