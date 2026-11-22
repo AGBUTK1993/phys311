@@ -1100,3 +1100,198 @@ input[type="checkbox"] {
   font-family: monospace;
   overflow-wrap: anywhere;
 }
+
+/* Optional coordinate readout; never intercept game input. */
+.game-area .coordinate-overlay {
+  position: absolute;
+  z-index: 6;
+  top: 72px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 8px 10px;
+  color: #172d30;
+  background: rgba(255, 250, 240, 0.96);
+  border: 1px solid #b59a66;
+  border-radius: 4px;
+  font: 12px monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.game-area .coordinate-overlay[hidden] {
+  display: none;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .coordinate-overlay {
+  top: calc(var(--banner-height) + 8px);
+}
+
+/* Chamber selection inside Settings and physics tools. */
+.lift-level-controls {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #b59a66;
+}
+
+.lift-level-controls label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.lift-level-controls select {
+  width: 100%;
+}
+
+#gameMenu .lift-level-controls button {
+  background: #203d42;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+}
+
+#gameMenu .lift-level-controls button:not(:disabled):hover {
+  background: #28656a;
+}
+
+/* Resume and Chamber Select share the first menu row. */
+#gameMenu #mainMenuActions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#mainMenuActions #menuRestart {
+  grid-column: 1 / -1;
+}
+
+#mainMenuActions button {
+  min-width: 0;
+}
+
+#gameMenu > .lift-level-controls {
+  margin: 12px 0 20px;
+  padding: 12px;
+  border: 1px solid #b59a66;
+}
+
+/* Consistent chamber label inside the game area. */
+.game-area .chamber-badge {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 6px 10px;
+  background: rgba(32, 61, 66, 0.94);
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  border-radius: 4px;
+  font: bold 12px Arial, sans-serif;
+  pointer-events: none;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .chamber-badge {
+  top: calc(var(--banner-height) + 8px);
+}
+
+.game-area .chamber-badge[hidden] {
+  display: none;
+}
+
+/* Leave room beneath the chamber label for optional coordinates. */
+.game-area .coordinate-overlay {
+  top: 52px;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .coordinate-overlay {
+  top: calc(var(--banner-height) + 48px);
+}
+
+/* Real HTML completion panel with keyboard/touch buttons. */
+.game-area .chamber-complete-panel {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(460px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 20px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 2px solid #c49a50;
+  border-radius: 8px;
+  box-shadow: 0 10px 35px #0006;
+}
+
+.game-area .chamber-complete-panel[hidden] {
+  display: none;
+}
+
+.chamber-complete-panel h2 {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.chamber-complete-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.game-area .chamber-complete-actions button,
+.game-area #debugToggleButton {
+  min-height: 44px;
+  padding: 8px 12px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  font-weight: bold;
+}
+
+.game-area .chamber-complete-actions button {
+  flex: 0 1 48%;
+  white-space: normal;
+}
+
+.game-area .chamber-complete-actions button:not(:disabled):hover,
+.game-area #debugToggleButton:not(:disabled):hover {
+  background: #28656a;
+}
+
+/* Debug information stays readable and scrollable on phones. */
+.game-area .game-debug-panel {
+  position: absolute;
+  z-index: 8;
+  top: 52px;
+  right: 12px;
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 24px));
+  max-height: 55%;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  background: rgba(245, 247, 250, 0.97);
+  color: #222;
+  border: 1px solid #b59a66;
+  border-radius: 4px;
+  font: 12px/1.5 monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.game-area:is(:fullscreen, .is-expanded) .game-debug-panel {
+  top: calc(var(--banner-height) + 48px);
+  max-height: min(55%, calc(100% - var(--banner-height) - 60px));
+}
+
+.game-area .game-debug-panel[hidden] {
+  display: none;
+}
+
+.game-debug-panel.energy-alert {
+  border-color: #c62828;
+}

@@ -10,6 +10,7 @@ import {
 import { createSeededRandom } from "./random.js";
 import { SuspensionWorld } from "./engine/suspension.js";
 import { DeliveryGoal } from "./delivery-goal.js";
+import { LIFT_LEVELS } from "./lift-levels.js";
 
 // Create a fresh world containing a box of moving balls.
 export function createBoxScene({
@@ -219,7 +220,7 @@ export function createSpringScene({
     return world;
 }
 
-export function createSuspensionScene() {
+export function createSuspensionScene(levelIndex = 0) {
     const world = new SuspensionWorld();
     world.cameraBounds = {
         xMin: -10,
@@ -227,6 +228,19 @@ export function createSuspensionScene() {
         yMin: -6,
         yMax: 6,
     };
+    const level = LIFT_LEVELS[levelIndex] || LIFT_LEVELS[0];
+
+    world.liftLevel = level;
+    world.liftLevelIndex = LIFT_LEVELS.indexOf(level);
+
+    world.anchor.pos.x = level.startX;
+    world.supportTarget = level.startX;
+    world.theta = level.theta;
+    world.dampingRate = level.dampingRate;
+
     world.delivery = new DeliveryGoal();
+    world.delivery.zone = { ...level.zone };
+
+    world.updateBodyState();
     return world;
 }

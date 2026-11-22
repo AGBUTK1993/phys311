@@ -152,6 +152,10 @@
                 <input id="showEnergy" type="checkbox">
                 Energy graph
             </label>
+            <label for="showCoordinates">
+                <input id="showCoordinates" type="checkbox">
+                Pointer coordinates on game
+            </label>
         </fieldset>
 
         <div class="controls">
@@ -238,9 +242,12 @@
                 Choose Resume when you are ready to continue.
             </p>
 
-            <div class="menu-actions">
+            <div id="mainMenuActions" class="menu-actions">
                 <button id="menuResume" type="button" autofocus>
                     Resume
+                </button>
+                <button id="menuChamberSelect" type="button">
+                    Chamber Select
                 </button>
                 <button id="menuRestart" type="button">
                     Restart scene

@@ -1,4 +1,5 @@
 import "./checks.js";
+import { LIFT_LEVELS } from "./lift-levels.js";
 
 import { runCollisionValidation } from "./validation.js";
 import {
@@ -14,7 +15,7 @@ import {
 } from "./engine/integrators.js";
 import { Camera } from "./render/camera.js";
 import { Renderer } from "./render/renderer.js";
-import { drawHUD } from "./render/hud.js";
+import { drawHUD, toggleDebug } from "./render/hud.js";
 import { PhysicsVisuals } from "./render/physics-visuals.js";
 import { PerformanceRecorder } from "./performance.js";
 import {
@@ -129,6 +130,16 @@ const showVelocity = document.getElementById("showVelocity");
 const showForce = document.getElementById("showForce");
 const showEnergy = document.getElementById("showEnergy");
 const energyPanel = document.getElementById("energyPanel");
+const energyCanvas = document.getElementById("energyCanvas");
+const showCoordinates = document.getElementById("showCoordinates");
+
+const coordinateOverlay = document.createElement("p");
+coordinateOverlay.className = "coordinate-overlay";
+coordinateOverlay.hidden = true;
+
+showCoordinates.addEventListener("change", () => {
+    coordinateOverlay.hidden = !showCoordinates.checked;
+});
 const energySummary = document.getElementById("energySummary");
 const pointerReadout = document.createElement("p");
 pointerReadout.id = "pointerReadout";
@@ -539,6 +550,9 @@ function applyPhysicsParameters() {
         sceneSelect.value !== "springs" || bonusRunKind !== null;
 }
 
+let selectedLiftLevel = 0;
+const completedLiftLevels = new Set();
+
 // Replace the old world with a fresh copy of the initial scene.
 function restartSimulation() {
     pointer.cancelDrag();
@@ -585,7 +599,9 @@ function restartSimulation() {
         renderer.showTrails = true;
         restitutionInput.disabled = true;
     } else if (scene === "suspension") {
-        world = createSuspensionScene();
+        world = createSuspensionScene(
+            conservativeModeInput.checked ? 0 : selectedLiftLevel
+        );
         world.conservativeMode = conservativeModeInput.checked;
 
         if (world.conservativeMode) {
@@ -658,7 +674,7 @@ function restartSimulation() {
     status.textContent = Number.isFinite(runDuration)
         ? `${sceneName} running — ${runDuration} simulated seconds.`
         : `${sceneName} running — unlimited duration.`;
-
+    syncLiftLevelControls();
 }
 
 // Event listeners run their functions when the user uses a control.
@@ -791,6 +807,8 @@ function advanceOneStep() {
             world.delivery.update(world.load, DT);
 
             if (world.delivery.won) {
+                completedLiftLevels.add(world.liftLevel.id);
+                syncLiftLevelControls();
                 paused = true;
                 finished = true;
                 pauseButton.textContent = "Delivered";
@@ -799,7 +817,7 @@ function advanceOneStep() {
                 status.textContent =
                     "CHAMBER COMPLETE! The artifact stayed inside the " +
                     "zone below 0.2 m/s for one simulated second. " +
-                    "Click Restart to try again.";
+                    "Choose Next Chamber or Select Chamber.";
             }
         }
     } catch (error) {
@@ -898,7 +916,9 @@ function frame(timestamp) {
             energyCanvas,
             energySummary
         );
+    }
 
+    if (showEnergy.checked || showCoordinates.checked) {
         const position = pointer.position;
 
         const pointerText = position
@@ -906,8 +926,10 @@ function frame(timestamp) {
             `y = ${position.y.toFixed(3)} m`
             : "Pointer: move over or touch the game to inspect coordinates.";
 
-        if (pointerReadout.textContent !== pointerText) {
-            pointerReadout.textContent = pointerText;
+        for (const readout of [pointerReadout, coordinateOverlay]) {
+            if (readout.textContent !== pointerText) {
+                readout.textContent = pointerText;
+            }
         }
     }
 
@@ -928,46 +950,7 @@ function frame(timestamp) {
     drawHUD(renderer.ctx, world, initialEnergy, stats);
     drawPointerOverlay(renderer.ctx, camera, pointer);
 
-    // Draw completion feedback above the other canvas overlays.
-    if (world.delivery?.won && !world.conservativeMode) {
-        const ctx = renderer.ctx;
-        const canvasWidth = canvas.logicalWidth;
-        const bannerWidth = Math.min(560, canvasWidth - 40);
-        const x = (canvasWidth - bannerWidth) / 2;
-        const y = 115;
-
-        ctx.save();
-        ctx.setTransform(
-            canvas.width / canvas.logicalWidth, 0,
-            0, canvas.height / canvas.logicalHeight,
-            0, 0
-        );
-
-        ctx.fillStyle = "#203d42";
-        ctx.fillRect(x, y, bannerWidth, 120);
-
-        ctx.strokeStyle = "#d6b56e";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, bannerWidth, 120);
-
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#f6e7be";
-        ctx.font = "bold 30px Georgia";
-        ctx.fillText(
-            "CHAMBER COMPLETE!",
-            canvasWidth / 2,
-            y + 47
-        );
-
-        ctx.font = "18px Arial";
-        ctx.fillText(
-            "Artifact secured. Select Restart to play again.",
-            canvasWidth / 2,
-            y + 85
-        );
-
-        ctx.restore();
-    }
+    syncChamberPresentation();
 
     stats.renderMs = performance.now() - renderStart;
 
@@ -1040,6 +1023,182 @@ wirePhysicsSliders({
 
 // Suspension controls: native range input supports mouse, touch,
 // and keyboard arrows without adding global keyboard shortcuts.
+const liftLevelControls = document.createElement("section");
+liftLevelControls.className = "lift-level-controls";
+
+const liftLevelLabel = document.createElement("label");
+liftLevelLabel.htmlFor = "liftLevelSelect";
+liftLevelLabel.textContent =
+    "Lift chamber (changing restarts the scene): ";
+
+const liftLevelSelect = document.createElement("select");
+liftLevelSelect.id = "liftLevelSelect";
+
+for (const [index, level] of LIFT_LEVELS.entries()) {
+    liftLevelSelect.add(new Option(level.name, String(index)));
+}
+
+const liftLevelHint = document.createElement("p");
+
+const nextChamberButton = document.createElement("button");
+nextChamberButton.type = "button";
+nextChamberButton.textContent = "Next chamber";
+
+liftLevelControls.id = "liftChamberChoices";
+liftLevelControls.hidden = true;
+liftLevelControls.append(
+    liftLevelLabel,
+    liftLevelSelect,
+    liftLevelHint
+);
+
+const menuChamberSelect =
+    document.getElementById("menuChamberSelect");
+
+menuChamberSelect.setAttribute(
+    "aria-controls", liftLevelControls.id
+);
+menuChamberSelect.setAttribute("aria-expanded", "false");
+
+const chamberBadge = document.createElement("p");
+chamberBadge.className = "chamber-badge";
+chamberBadge.setAttribute("aria-live", "polite");
+
+const completionPanel = document.createElement("section");
+completionPanel.className = "chamber-complete-panel";
+completionPanel.hidden = true;
+completionPanel.setAttribute("role", "region");
+completionPanel.setAttribute(
+    "aria-labelledby", "chamberCompleteHeading"
+);
+completionPanel.innerHTML =
+    '<h2 id="chamberCompleteHeading">Chamber Complete</h2>';
+
+const completionMessage = document.createElement("p");
+
+const completionActions = document.createElement("div");
+completionActions.className = "chamber-complete-actions";
+
+const selectChamberButton = document.createElement("button");
+selectChamberButton.type = "button";
+selectChamberButton.textContent = "Select Chamber";
+
+completionActions.append(
+    selectChamberButton,
+    nextChamberButton
+);
+completionPanel.append(completionMessage, completionActions);
+
+function showChamberSelection() {
+    if (sceneSelect.value !== "suspension") return;
+
+    openGameMenu();
+    completionPanel.hidden = true;
+    liftLevelControls.hidden = false;
+    menuChamberSelect.setAttribute("aria-expanded", "true");
+
+    liftLevelSelect.focus({ preventScroll: true });
+    liftLevelControls.scrollIntoView({ block: "nearest" });
+}
+
+menuChamberSelect.addEventListener(
+    "click", showChamberSelection
+);
+selectChamberButton.addEventListener(
+    "click", showChamberSelection
+);
+
+let lastCompletedWorld = null;
+
+function syncChamberPresentation() {
+    const isLift =
+        sceneSelect.value === "suspension" &&
+        !!world?.liftLevel;
+
+    chamberBadge.hidden = !isLift;
+    menuChamberSelect.hidden = !isLift;
+
+    completionPanel.hidden =
+        !isLift ||
+        world.conservativeMode ||
+        !world.delivery.won ||
+        gameMenu.open;
+
+    if (!isLift) return;
+
+    const label =
+        "Chamber " + world.liftLevel.name +
+        (world.conservativeMode ? " · Physics test" : "");
+
+    if (chamberBadge.textContent !== label) {
+        chamberBadge.textContent = label;
+    }
+
+    if (!completionPanel.hidden) {
+        const message = selectedLiftLevel < LIFT_LEVELS.length - 1
+            ? "Artifact secured. Continue or choose another chamber."
+            : "Final chamber complete. Choose a chamber to replay.";
+
+        if (completionMessage.textContent !== message) {
+            completionMessage.textContent = message;
+        }
+
+        if (lastCompletedWorld !== world) {
+            lastCompletedWorld = world;
+
+            requestAnimationFrame(() => {
+                if (!completionPanel.hidden) {
+                    (nextChamberButton.disabled
+                        ? selectChamberButton
+                        : nextChamberButton).focus();
+                }
+            });
+        }
+    }
+}
+
+function syncLiftLevelControls() {
+    const active = sceneSelect.value === "suspension";
+    if (!active) liftLevelControls.hidden = true;
+
+    if (!active || !world) return;
+
+    liftLevelSelect.value = String(selectedLiftLevel);
+    liftLevelSelect.disabled = world.conservativeMode;
+
+    for (const [index, level] of LIFT_LEVELS.entries()) {
+        liftLevelSelect.options[index].textContent =
+            level.name +
+            (completedLiftLevels.has(level.id) ? " ✓" : "");
+    }
+
+    liftLevelHint.textContent = world.conservativeMode
+        ? "Conservative testing uses the original chamber with no damping."
+        : world.liftLevel.hint;
+
+    nextChamberButton.disabled =
+        world.conservativeMode ||
+        !world.delivery.won ||
+        selectedLiftLevel >= LIFT_LEVELS.length - 1;
+
+    nextChamberButton.textContent = "Next Chamber";
+}
+
+liftLevelSelect.addEventListener("change", () => {
+    selectedLiftLevel = Number(liftLevelSelect.value);
+    restartSimulation();
+    keepMenuPaused();
+});
+
+nextChamberButton.addEventListener("click", () => {
+    if (nextChamberButton.disabled) return;
+
+    selectedLiftLevel += 1;
+    gameMenu.close();
+    restartSimulation();
+    canvas.focus({ preventScroll: true });
+});
+
 const suspensionControls = document.createElement("section");
 suspensionControls.hidden = true;
 
@@ -1285,7 +1444,21 @@ window.addEventListener("DOMContentLoaded", () => {
     canvas.before(gameArea);
     gameArea.append(toolbar, canvas);
     // Fullscreen includes HTML controls and the settings dialog.
-    gameArea.append(gameMenu);
+    gameArea.append(gameMenu, coordinateOverlay);
+    gameArea.append(chamberBadge, completionPanel);
+
+    gameMenu.addEventListener("close", () => {
+        liftLevelControls.hidden = true;
+        menuChamberSelect.setAttribute("aria-expanded", "false");
+    });
+
+    gameMenu.addEventListener("click", event => {
+        if (event.target.closest?.("#debugToggleButton")) {
+            closeGameMenu(false);
+            focusGame();
+        }
+    });
+
     const bannerSize = document.createElement("div");
     bannerSize.className = "game-banner-size";
     bannerSize.setAttribute("aria-hidden", "true");
@@ -1653,6 +1826,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
             <dt>G</dt>
             <dd>Show or hide the energy graph.</dd>
+                        <dt>B</dt>
+            <dd>Show or hide the debug panel.</dd>
 
             <dt>Esc</dt>
             <dd>Close the menu or an information panel without resuming;
@@ -1761,7 +1936,17 @@ window.addEventListener("DOMContentLoaded", () => {
                 target.isContentEditable
             );
 
-        if (key !== "escape" && editingControl) return;
+        const debugFromButton =
+            key === "b" &&
+            target instanceof HTMLElement &&
+            !target.isContentEditable &&
+            !!target.closest("button, summary");
+
+        if (
+            key !== "escape" &&
+            editingControl &&
+            !debugFromButton
+        ) return;
         if (!["f", "m", "b", "c", "g", "escape"].includes(key)) return;
 
         event.preventDefault();
@@ -1807,13 +1992,10 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 
         if (key === "b") {
-            openGameMenu();
+            toggleDebug();
 
-            const debugSettings =
-                document.getElementById("menuSettings");
-
-            debugSettings.open = true;
-            debugSettings.querySelector("summary").focus();
+            if (gameMenu.open) closeGameMenu(false);
+            focusGame();
             return;
         }
 
@@ -2040,6 +2222,7 @@ window.addEventListener("DOMContentLoaded", () => {
             showVelocity,
             showForce,
             showEnergy,
+            showCoordinates,
         ];
 
         function syncSelectAll() {
@@ -2074,9 +2257,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Move conservative mode; leave the support slider beside the game.
     settingsContent.append(conservativeModeLabel);
+
+    document.getElementById("mainMenuActions").after(
+        liftLevelControls
+    );
+
+    // Start drawing after the game containers and controls exist.
+    requestAnimationFrame(frame);
 });
 
 wireKeyboardControls();
 restartSimulation();
-requestAnimationFrame(frame);
 runSuspensionPeriodValidation();

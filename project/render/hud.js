@@ -4,41 +4,43 @@ let lastTextWorld = null;
 let debugEnabled =
   new URLSearchParams(window.location.search).get("debug") === "1";
 let debugButton = null;
+let debugPanel = null;
 const DRIFT_TOLERANCE_PERCENT = 0.1;
 
-function toggleDebug() {
+export function toggleDebug() {
   debugEnabled = !debugEnabled;
   if (debugButton) {
-    debugButton.textContent = debugEnabled ? "Hide debug (D)" : "Show debug (D)";
+    debugButton.textContent = debugEnabled ? "Hide Debug Panel (B)" : "Show Debug Panel (B)";
     debugButton.setAttribute("aria-pressed", String(debugEnabled));
   }
+  if (debugPanel) debugPanel.hidden = !debugEnabled;
   lastTextUpdate = -Infinity;
 }
 
-window.addEventListener("keydown", (event) => {
-  const target = event.target;
-  if (
-    event.defaultPrevented || event.repeat ||
-    event.ctrlKey || event.altKey || event.metaKey ||
-    target?.isContentEditable ||
-    target?.closest?.("input, select, textarea, button, [role='textbox']")
-  ) return;
-
-  if (event.key.toLowerCase() === "d") {
-    event.preventDefault();
-    toggleDebug();
-  }
-});
-
 export function drawHUD(ctx, world, initialEnergy, stats) {
+  const gameArea = ctx.canvas.closest(".game-area");
+  if (!gameArea) return;
   if (!debugButton) {
     debugButton = document.createElement("button");
     debugButton.type = "button";
-    debugButton.textContent = debugEnabled ? "Hide debug (D)" : "Show debug (D)";
+    debugButton.id = "debugToggleButton";
+    debugButton.textContent = debugEnabled ? "Hide Debug Panel (B)" : "Show Debug Panel (B)";
     debugButton.setAttribute("aria-pressed", String(debugEnabled));
     debugButton.addEventListener("click", toggleDebug);
-        document.getElementById("menuSettingsContent").append(debugButton);
+    document.getElementById("menuSettingsContent").append(debugButton);
   }
+
+  if (!debugPanel) {
+    debugPanel = document.createElement("pre");
+    debugPanel.className = "game-debug-panel";
+    debugPanel.setAttribute("role", "region");
+    debugPanel.setAttribute("aria-label", "Debug panel");
+    debugPanel.tabIndex = 0;
+
+    gameArea.append(debugPanel);
+  }
+
+  debugPanel.hidden = !debugEnabled;
 
   const energy = world.totalEnergy();
   const momentum = world.totalMomentum();
@@ -75,23 +77,10 @@ export function drawHUD(ctx, world, initialEnergy, stats) {
     lines.push("Motor/damping: energy change is expected.");
   }
 
-  if (debugEnabled) {
-    ctx.save();
-    const left = ctx.canvas.logicalWidth - 475;
-    ctx.fillStyle = "rgba(245, 247, 250, 0.95)";
-    ctx.fillRect(left, 15, 460, 26 + lines.length * 22);
-    ctx.font = "16px monospace";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    lines.forEach((line, index) => {
-      ctx.fillStyle = index === 3 && excessiveDrift ? "#c62828" : "#222";
-      ctx.fillText(line, left + 12, 28 + index * 22);
-    });
-    ctx.restore();
-  }
-
   const now = performance.now();
   if (world !== lastTextWorld || now - lastTextUpdate >= 250) {
+    debugPanel.textContent = lines.join("\n");
+    debugPanel.classList.toggle("energy-alert", excessiveDrift);
     const text = document.getElementById("textDiagnostics");
     if (text) {
       text.style.whiteSpace = "pre-line";
