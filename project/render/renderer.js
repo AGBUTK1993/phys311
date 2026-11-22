@@ -63,12 +63,34 @@ export class Renderer {
         this.lastTrailTime = world.time;
     }
 
-    drawChamberBackdrop() {
+    drawChamberBackdrop(stoneBounds = null) {
         const ctx = this.ctx;
         const w = this.canvas.logicalWidth;
         const h = this.canvas.logicalHeight;
 
         ctx.save();
+
+        // Teal surrounds the arena; sandstone stays inside its walls.
+        ctx.fillStyle = "#294d50";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+
+        if (stoneBounds) {
+            const corner = this.camera.toScreen({
+                x: stoneBounds.xMin,
+                y: stoneBounds.yMax,
+            });
+
+            ctx.beginPath();
+            ctx.rect(
+                corner.x,
+                corner.y,
+                (stoneBounds.xMax - stoneBounds.xMin) * this.camera.scale,
+                (stoneBounds.yMax - stoneBounds.yMin) * this.camera.scale
+            );
+            ctx.clip();
+        }
 
         // Painted rear wall: scenery, not collision geometry.
         const stone = ctx.createLinearGradient(0, 0, 0, h);
@@ -121,6 +143,8 @@ export class Renderer {
             ctx.stroke();
         }
 
+        ctx.restore(); // End the sandstone clipping region.
+
         // Match the HTML toolbar's reserved screen space.
         const banner = this.canvas.closest(".game-area")
             ?.querySelector(".game-banner-size");
@@ -139,9 +163,8 @@ export class Renderer {
             ? parseFloat(getComputedStyle(banner).paddingTop)
             : 0;
 
-        const narrow = window.matchMedia(
-            "(max-width: 700px)"
-        ).matches;
+        const narrow = this.canvas.closest(".game-area")
+            ?.classList.contains("compact-game");
 
         // Decorative painted bands.
         ctx.fillStyle = "#294d50";
@@ -157,7 +180,7 @@ export class Renderer {
         ctx.translate(
             w / 2,
             bannerPixels
-                ? (headerTop + (narrow ? 16 : 22)) * screenScale
+                ? (headerTop + (narrow ? 100 : 28)) * screenScale
                 : 45
         );
 
@@ -417,7 +440,9 @@ export class Renderer {
             0, 0
         );
         if (world.rope || world.sceneKind === "box") {
-            this.drawChamberBackdrop();
+            this.drawChamberBackdrop(
+                world.sceneKind === "box" ? world.bounds : null
+            );
         }
 
         // Draw the walls for scenes that have boundaries.

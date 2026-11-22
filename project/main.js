@@ -218,9 +218,7 @@ function applyViewZoom(elapsed = 0) {
             ?.querySelector(".game-banner-size")
             ?.getBoundingClientRect().height || 0;
 
-        const topPadding = expanded
-            ? (bannerHeight + 12) * screenScale
-            : 100;
+        const topPadding = (bannerHeight + 12) * screenScale;
 
         const mobileView = window.matchMedia(
             "(pointer: coarse)"
@@ -278,7 +276,11 @@ function applyViewZoom(elapsed = 0) {
 
         // Reserve space for the banner and lower controls.
         const side = 16 * unitsPerPixel;
-        const top = (bannerHeight + 12) * unitsPerPixel;
+        const bandHeight = bannerHeight > 0
+            ? bannerHeight * unitsPerPixel
+            : 92;
+
+        const top = bandHeight + 12 * unitsPerPixel;
         const bottom = 120 * unitsPerPixel;
 
         const usableWidth = Math.max(1, width - 2 * side);
@@ -1124,6 +1126,7 @@ menuChamberSelect.setAttribute("aria-expanded", "false");
 
 const chamberBadge = document.createElement("p");
 chamberBadge.className = "chamber-badge";
+chamberBadge.id = "gameChamberBadge";
 chamberBadge.setAttribute("aria-live", "polite");
 
 const completionPanel = document.createElement("section");
@@ -1285,7 +1288,7 @@ conservativeModeInput.addEventListener("change", () => {
 
 const supportLabel = document.createElement("label");
 supportLabel.htmlFor = "supportTargetInput";
-supportLabel.textContent = "Support target: ";
+supportLabel.textContent = "Horizontal: ";
 
 const supportTargetInput = document.createElement("input");
 supportTargetInput.type = "range";
@@ -1497,6 +1500,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const toolbar = document.createElement("div");
     toolbar.className = "game-toolbar";
+    toolbar.id = "gamePlaybackControls";
     toolbar.setAttribute("role", "group");
     toolbar.setAttribute("aria-label", "Game controls");
 
@@ -1524,6 +1528,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const bannerSize = document.createElement("div");
     bannerSize.className = "game-banner-size";
+    bannerSize.id = "gameBannerSize";
     bannerSize.setAttribute("aria-hidden", "true");
     gameArea.append(bannerSize);
 
@@ -1548,6 +1553,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const viewControls = document.createElement("div");
     viewControls.className = "game-view-controls";
+    viewControls.id = "gameViewControls";
     viewControls.setAttribute("role", "group");
     viewControls.setAttribute("aria-label", "View controls");
 
@@ -2445,6 +2451,21 @@ window.addEventListener("DOMContentLoaded", () => {
 
     navigationCorner.append(controlsButton);
     gameArea.append(navigationCorner);
+
+    // Respond to the game area's width, not only the browser window.
+    const layoutObserver = new ResizeObserver(() => {
+        gameArea.classList.toggle(
+            "compact-game",
+            gameArea.clientWidth < 1000
+        );
+    });
+
+    gameArea.classList.toggle(
+        "compact-game",
+        gameArea.clientWidth < 1000
+    );
+
+    layoutObserver.observe(gameArea);
 
     // Move the remaining settings groups into the menu.
     for (const group of document.querySelectorAll("main > .controls")) {

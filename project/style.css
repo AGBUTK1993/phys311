@@ -1473,3 +1473,204 @@ input[type="checkbox"] {
     bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 160px) + 60px);
   }
 }
+
+/* Playback controls: always together at bottom right. */
+.game-area #gamePlaybackControls {
+  position: absolute;
+  z-index: 8;
+  inset: auto;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  left: auto;
+  top: auto;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  pointer-events: auto;
+}
+
+.game-area #gamePlaybackControls > * {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.game-area #gamePlaybackControls button {
+  min-height: 44px;
+  padding: 6px 10px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* Responsive slider panel and banner controls. */
+.game-area #gameSliderPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 2px 10px;
+  width: min(620px, calc(100% - 360px));
+  padding: 6px 8px;
+}
+
+.game-area #gameSliderPanel > .game-support-control {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.game-area #gameSliderPanel > .rope-length-control {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.game-area #gameSliderPanel >
+:is(.game-support-control, .rope-length-control) {
+  grid-template-columns: 68px minmax(100px, 1fr) 48px;
+  gap: 4px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.game-area #gameSliderPanel label input {
+  min-height: 32px;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 4px;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls output {
+  min-width: 0;
+  max-width: 100px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 2px 6px;
+}
+
+.game-area #gameSliderPanel > .rope-feedback {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0;
+  font-size: 11px;
+}
+
+.game-area .game-navigation-corner {
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Narrow game areas: full-width sliders, then gears/tension. */
+.game-area.compact-game #gameSliderPanel {
+  width: min(440px, calc(100% - 16px));
+  grid-template-columns: minmax(0, 1fr) 100px;
+  gap: 2px 6px;
+}
+
+.game-area.compact-game #gameSliderPanel > label {
+  grid-column: 1 / -1;
+}
+
+.game-area.compact-game #gameSliderPanel .winch-gear-controls {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.game-area.compact-game #gameSliderPanel > .rope-feedback {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.game-area.compact-game .game-navigation-corner,
+.game-area.compact-game #gamePlaybackControls {
+  bottom: calc(
+    max(8px, env(safe-area-inset-bottom, 0px)) +
+    var(--slider-panel-height, 140px) + 8px
+  );
+}
+
+.game-area.compact-game.touch-layout .game-corner {
+  bottom: calc(
+    max(8px, env(safe-area-inset-bottom, 0px)) +
+    var(--slider-panel-height, 140px) + 60px
+  );
+}
+
+/* The renderer measures this element to draw the teal banner. */
+.game-area #gameBannerSize {
+  display: block;
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(64px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.game-area #gameChamberBadge {
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: max(8px, env(safe-area-inset-left, 0px));
+  max-width: calc(50% - 100px);
+  box-sizing: border-box;
+}
+
+.game-area #gameViewControls {
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+  left: auto;
+  bottom: auto;
+  display: flex;
+  flex-wrap: nowrap;
+  width: auto;
+  gap: 6px;
+}
+
+.game-area #gameViewControls button {
+  position: static;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+
+.game-area.compact-game #gameBannerSize {
+  height: calc(116px + env(safe-area-inset-top, 0px));
+}
+
+.game-area.compact-game #gameChamberBadge {
+  max-width: calc(100% - 148px);
+}
+
+.game-area.compact-game #gameViewControls {
+  flex-direction: column;
+  width: 124px;
+}
+
+@media (pointer: coarse) {
+  .game-area #gameSliderPanel label input {
+    min-height: 44px;
+  }
+
+  .game-area #gameSliderPanel .winch-gear-controls button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.game-area #gameSliderPanel[hidden],
+.game-area #gameSliderPanel > [hidden],
+.game-area #gameChamberBadge[hidden] {
+  display: none;
+}

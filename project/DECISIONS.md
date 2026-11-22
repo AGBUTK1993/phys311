@@ -129,3 +129,7 @@ Fullscreen must preserve the running simulation's physical state.
 Planned scarab artwork: Approximately 65% deep lapis-ultramarine
 and 35% Egyptian blue. Exact colors will follow reference photos.
 This artwork is not implemented yet.
+
+Planned: Keep the gameplay controls usable in narrow windows and align the chamber and view controls with the teal banner.
+Did: Renamed the horizontal slider label, made the compact layout respond to the game area's width, replaced the latest slider-layout rules, and aligned the banner graphics with its HTML controls.
+Why: The previous layout could squeeze slider tracks and place controls outside the banner. Other game expansion is deferred while completing the required beta checks and documentation.
