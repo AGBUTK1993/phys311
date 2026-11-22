@@ -34,6 +34,8 @@ export function createBoxScene({
         collisionsEnabled: true,
     });
 
+    world.sceneKind = "box";
+
     // Arrange the balls on a grid with space between them.
     const columns = Math.ceil(Math.sqrt(count * 20 / 12));
     const rows = Math.ceil(count / columns);
@@ -238,7 +240,7 @@ export function createSuspensionScene(levelIndex = 0) {
     world.theta = level.theta;
     world.dampingRate = level.dampingRate;
 
-        world.verticalEnabled = Boolean(level.verticalEnabled);
+    world.verticalEnabled = Boolean(level.verticalEnabled);
     world.supportHeightTarget = world.anchor.pos.y;
 
     if (world.verticalEnabled) {

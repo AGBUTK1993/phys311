@@ -13,7 +13,14 @@ export class WinchWorld extends SuspensionWorld {
         this.maxLength = 4.5;
 
         // Gameplay setting, not a measured material strength.
-        this.breakStrength = 35;
+        this.breakStrength = 26;
+
+        this.winchGear = 1; // Array index 1 means Gear 2.
+        this.winchGears = [
+            { name: "Fine", speed: 0.25, acceleration: 0.35 },
+            { name: "Normal", speed: 0.50, acceleration: 1.00 },
+            { name: "Fast", speed: 1.00, acceleration: 3.00 },
+        ];
 
         this.ropeState = "taut";
         this.breakTime = null;
@@ -105,15 +112,21 @@ export class WinchWorld extends SuspensionWorld {
             this.maxLength
         );
 
+        const gear = this.winchGears[this.winchGear];
+
         const desiredRate = clamp(
             2 * (this.lengthTarget - this.length),
-            -0.5,
-            0.5
+            -gear.speed,
+            gear.speed
         );
 
         const al = this.ropeState === "broken"
             ? 0
-            : clamp(4 * (desiredRate - this.lengthRate), -1, 1);
+            : clamp(
+                4 * (desiredRate - this.lengthRate),
+                -gear.acceleration,
+                gear.acceleration
+            );
 
         this.lengthAcceleration = al;
 

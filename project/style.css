@@ -1405,3 +1405,71 @@ input[type="checkbox"] {
     bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 120px) + 8px);
   }
 }
+
+/* Leave space beside the central panel for Menu and Controls. */
+.game-area #gameSliderPanel {
+  width: min(440px, calc(100% - 360px));
+}
+
+.game-area .game-navigation-corner {
+  position: absolute;
+  z-index: 8;
+  left: max(8px, env(safe-area-inset-left, 0px));
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.game-area .game-navigation-corner button,
+.game-area #gameSliderPanel .winch-gear-controls button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 10px;
+  background: #203d42;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  border-radius: 5px;
+  font-weight: bold;
+  touch-action: manipulation;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls output {
+  flex: 1;
+  text-align: center;
+  font: 12px Arial, sans-serif;
+}
+
+.game-area #gameSliderPanel .winch-gear-controls button:disabled {
+  opacity: 0.45;
+}
+
+/* Movement/zoom above the bottom navigation row. */
+.game-area.game-area .game-corner {
+  bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 52px);
+}
+
+/* Narrow screens need the panel and navigation in separate rows. */
+@media (orientation: portrait),
+(max-width: 600px) {
+  .game-area #gameSliderPanel {
+    width: calc(100% - 24px);
+    max-width: 440px;
+  }
+
+  .game-area .game-navigation-corner {
+    bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 160px) + 8px);
+  }
+
+  .game-area.game-area.touch-layout .game-corner {
+    bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 160px) + 60px);
+  }
+}

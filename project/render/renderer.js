@@ -416,7 +416,7 @@ export class Renderer {
             0, this.canvas.height / this.canvas.logicalHeight,
             0, 0
         );
-        if (world.rope) {
+        if (world.rope || world.sceneKind === "box") {
             this.drawChamberBackdrop();
         }
 

@@ -266,6 +266,45 @@ function applyViewZoom(elapsed = 0) {
         return;
     }
 
+    // Fit the existing ball arena without changing its physics.
+    if (sceneSelect.value === "box" && world?.bounds) {
+        const area = canvas.closest(".game-area");
+        const canvasHeight = canvas.getBoundingClientRect().height;
+        const unitsPerPixel = height / Math.max(1, canvasHeight);
+
+        const bannerHeight = area
+            ?.querySelector(".game-banner-size")
+            ?.getBoundingClientRect().height || 0;
+
+        // Reserve space for the banner and lower controls.
+        const side = 16 * unitsPerPixel;
+        const top = (bannerHeight + 12) * unitsPerPixel;
+        const bottom = 120 * unitsPerPixel;
+
+        const usableWidth = Math.max(1, width - 2 * side);
+        const usableHeight = Math.max(1, height - top - bottom);
+
+        const bounds = world.bounds;
+        const arenaWidth = bounds.xMax - bounds.xMin;
+        const arenaHeight = bounds.yMax - bounds.yMin;
+
+        camera.followCenter = null;
+        cameraWorld = world;
+
+        camera.scale = Math.min(
+            usableWidth / arenaWidth,
+            usableHeight / arenaHeight
+        ) * viewZoom;
+
+        camera.originX = width / 2 -
+            (bounds.xMin + bounds.xMax) / 2 * camera.scale;
+
+        camera.originY = top + usableHeight / 2 +
+            (bounds.yMin + bounds.yMax) / 2 * camera.scale;
+
+        return;
+    }
+
     // Fit the other simulations to their original reference view.
     cameraWorld = null;
     camera.followCenter = null;
@@ -1693,7 +1732,7 @@ window.addEventListener("DOMContentLoaded", () => {
     `;
 
     supportLabel.classList.add("game-support-control");
-    bottomControls.append(shortcuts, supportLabel);
+    bottomControls.append(supportLabel);
     gameArea.append(bottomControls);
 
     syncRopeControls = createRopeControls({
@@ -1909,6 +1948,13 @@ window.addEventListener("DOMContentLoaded", () => {
     and keyboard arrows when focused.
 </dd>
 
+<dt>H / K or numpad 4 / 6</dt>
+<dd>
+    Shift the winch down/up one gear.
+    Faster gears allow faster rope movement and stronger acceleration,
+    increasing the risk of breaking the rope.
+</dd>
+
             <dt>F</dt>
             <dd>Toggle fullscreen or expanded view.</dd>
 
@@ -2117,11 +2163,12 @@ window.addEventListener("DOMContentLoaded", () => {
     }, { capture: true });
 
     function movementKey(event) {
-        // Physical numpad keys remain identifiable with Num Lock off.
-        if (
-            event.code === "Numpad8" ||
-            event.code === "Numpad2"
-        ) {
+        if ([
+            "Numpad8",
+            "Numpad2",
+            "Numpad4",
+            "Numpad6",
+        ].includes(event.code)) {
             return event.code;
         }
 
@@ -2141,6 +2188,36 @@ window.addEventListener("DOMContentLoaded", () => {
         const key = movementKey(event);
 
         if (sceneSelect.value !== "suspension") return;
+
+        const gearDirection =
+            key === "h" || key === "Numpad4" ? -1 :
+                key === "k" || key === "Numpad6" ? 1 :
+                    0;
+
+        if (gearDirection !== 0) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            if (
+                event.repeat ||
+                gameMenu.open ||
+                paused ||
+                finished ||
+                !world?.winchGears ||
+                world.conservativeMode ||
+                world.ropeState === "broken"
+            ) return;
+
+            world.winchGear = Math.max(
+                0,
+                Math.min(
+                    world.winchGears.length - 1,
+                    world.winchGear + gearDirection
+                )
+            );
+
+            return;
+        }
 
         const verticalKey = reservedVerticalKeys.has(key);
 
@@ -2277,7 +2354,8 @@ window.addEventListener("DOMContentLoaded", () => {
                     Math.min(
                         world.maxLength,
                         world.lengthTarget +
-                        (Number(payOut) - Number(reelIn)) * 0.5 * elapsed
+                        (Number(payOut) - Number(reelIn)) *
+                        world.winchGears[world.winchGear].speed * elapsed
                     )
                 );
             }
@@ -2339,14 +2417,34 @@ window.addEventListener("DOMContentLoaded", () => {
         destination.append(unit);
     }
 
-    // Primary game controls stay over the canvas.
+    // Pause and Restart remain in the upper toolbar.
     for (const id of [
-        "menuButton",
         "pauseButton",
         "restartButton",
     ]) {
         moveWithHelp(id, toolbar);
     }
+
+    // Menu and Controls share a bottom-left group.
+    const navigationCorner = document.createElement("div");
+    navigationCorner.className = "game-navigation-corner";
+    navigationCorner.setAttribute("role", "group");
+    navigationCorner.setAttribute("aria-label", "Menu and controls");
+
+    moveWithHelp("menuButton", navigationCorner);
+
+    const controlsButton = document.createElement("button");
+    controlsButton.type = "button";
+    controlsButton.textContent = "Controls";
+    controlsButton.setAttribute("aria-controls", "controlsPanel");
+
+    controlsButton.addEventListener("click", () => {
+        clearSupportKeys();
+        toggleControls();
+    });
+
+    navigationCorner.append(controlsButton);
+    gameArea.append(navigationCorner);
 
     // Move the remaining settings groups into the menu.
     for (const group of document.querySelectorAll("main > .controls")) {
