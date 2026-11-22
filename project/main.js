@@ -129,8 +129,13 @@ const showVelocity = document.getElementById("showVelocity");
 const showForce = document.getElementById("showForce");
 const showEnergy = document.getElementById("showEnergy");
 const energyPanel = document.getElementById("energyPanel");
-const energyCanvas = document.getElementById("energyCanvas");
 const energySummary = document.getElementById("energySummary");
+const pointerReadout = document.createElement("p");
+pointerReadout.id = "pointerReadout";
+pointerReadout.textContent =
+    "Pointer: move over or touch the game to inspect coordinates.";
+
+energyPanel.append(pointerReadout);
 
 showEnergy.addEventListener("change", () => {
     energyPanel.hidden = !showEnergy.checked;
@@ -204,15 +209,28 @@ function applyViewZoom(elapsed = 0) {
             ? (bannerHeight + 12) * screenScale
             : 100;
 
+        const mobileView = window.matchMedia(
+            "(pointer: coarse)"
+        ).matches;
+
+        const portrait = window.matchMedia(
+            "(orientation: portrait)"
+        ).matches;
+
+        const bottomSpace = mobileView && !portrait ? 88 : 144;
+
         const bottomPadding = expanded
-            ? Math.min(height * 0.38, 144 * screenScale)
+            ? Math.min(height * 0.38, bottomSpace * screenScale)
             : (touchLayout ? 30 : 210);
 
         const usableHeight = Math.max(
             80, height - topPadding - bottomPadding
         );
 
-        camera.scale = usableHeight / 8 * viewZoom;
+        // Show less vertical world space on phones, making objects larger.
+        // Desktop keeps its existing eight-metre default.
+        const visibleWorldHeight = mobileView ? 6 : 8;
+        camera.scale = usableHeight / visibleWorldHeight * viewZoom;
 
         camera.follow(
             {
@@ -880,6 +898,17 @@ function frame(timestamp) {
             energyCanvas,
             energySummary
         );
+
+        const position = pointer.position;
+
+        const pointerText = position
+            ? `Pointer: x = ${position.x.toFixed(3)} m, ` +
+            `y = ${position.y.toFixed(3)} m`
+            : "Pointer: move over or touch the game to inspect coordinates.";
+
+        if (pointerReadout.textContent !== pointerText) {
+            pointerReadout.textContent = pointerText;
+        }
     }
 
     const downwardGravity = world.forces.reduce(

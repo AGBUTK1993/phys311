@@ -829,8 +829,7 @@ input[type="checkbox"] {
   right: var(--hud-right);
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-toolbar > :first-child {
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-toolbar> :first-child {
   margin-right: 0;
 }
 
@@ -922,8 +921,7 @@ input[type="checkbox"] {
   pointer-events: none;
 }
 
-.game-area.game-area:is(:fullscreen, .is-expanded)
-.game-bottom-controls[hidden],
+.game-area.game-area:is(:fullscreen, .is-expanded) .game-bottom-controls[hidden],
 .game-area.game-area:is(:fullscreen, .is-expanded) .game-shortcuts {
   display: none;
 }
@@ -1017,4 +1015,88 @@ input[type="checkbox"] {
 
 .controls-list dd {
   margin-left: 0;
+}
+
+/* Keep game buttons teal, including after tapping on a phone. */
+.game-area .game-corner button,
+.game-area .game-view-controls button,
+.game-area #gameMenu>.menu-actions button,
+.game-area #menuClose {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #203d42;
+  background-image: none;
+  color: #f6e7be;
+  border: 1px solid #b59a66;
+  font-weight: bold;
+}
+
+.game-area .game-corner button:is(:hover, :active, :focus),
+.game-area .game-view-controls button:is(:hover, :active, :focus),
+.game-area #gameMenu>.menu-actions button:is(:hover, :active, :focus),
+.game-area #menuClose:is(:hover, :active, :focus) {
+  background: #28656a;
+  color: #f6e7be;
+}
+
+/* Match menu actions to the Settings/Instructions rows. */
+.game-area #gameMenu>.menu-actions button,
+.game-area #menuClose {
+  padding: 12px;
+  border-radius: 0;
+  text-align: left;
+}
+
+#gameMenu>.menu-actions {
+  margin-bottom: 12px;
+}
+
+/* Give the newly added controls section the same frame. */
+#gameMenu>details {
+  margin: 20px 0;
+  padding: 12px;
+  border: 1px solid #b59a66;
+}
+
+#gameMenu>details>summary {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Mobile expanded/fullscreen: slider against the safe bottom edge. */
+.game-area.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-support-control {
+  bottom: env(safe-area-inset-bottom, 0px);
+  width: min(380px, calc(100% - 248px));
+  padding: 4px 8px;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.game-area.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-support-control input {
+  flex: 1 1 90px;
+  min-width: 60px;
+}
+
+.game-area.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-support-control output {
+  min-width: 3.5em;
+}
+
+/* Upright phones: put the corner buttons above the bottom slider. */
+@media (orientation: portrait) {
+  .game-area.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-support-control {
+    width: calc(100% - 24px);
+    max-width: 380px;
+  }
+
+  .game-area.game-area.touch-layout:is(:fullscreen, .is-expanded) .game-corner {
+    bottom: calc(var(--hud-bottom) + 64px);
+  }
+}
+
+/* Coordinates now belong to the G panel. */
+#pointerReadout {
+  padding-top: 8px;
+  border-top: 1px solid #b59a66;
+  font-family: monospace;
+  overflow-wrap: anywhere;
 }

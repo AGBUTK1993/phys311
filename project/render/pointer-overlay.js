@@ -56,18 +56,5 @@ export function drawPointerOverlay(ctx, camera, pointer) {
     ctx.lineTo(screen.x, screen.y + 10);
     ctx.stroke();
 
-    // Coordinate readout, separate from the existing diagnostics.
-    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.fillRect(12, 12, 420, 42);
-
-    ctx.fillStyle = "#111";
-    ctx.font = "16px monospace";
-    ctx.fillText(
-        `Pointer: x = ${position.x.toFixed(3)} m, ` +
-        `y = ${position.y.toFixed(3)} m`,
-        22,
-        39
-    );
-
     ctx.restore();
 }
