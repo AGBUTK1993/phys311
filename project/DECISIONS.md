@@ -137,3 +137,23 @@ Why: The previous layout could squeeze slider tracks and place controls outside 
 Planned: Make physics diagnostics accessible without covering gameplay on startup.
 Did: Added collapsible diagnostics and graph sections above the canvas while retaining the B/G overlay panels.
 Why: Reviewers can inspect the measurements without immediately obstructing the game; fullscreen users retain the existing panels.
+
+## 2026-11-22 — Final Week 12 validation and submission checkpoint
+
+Planned: Complete the MUST-tier physics validation, CPU-throttling check, and documentation before attempting further gameplay expansion.
+
+Did: Completed the 60-second conservative-energy validation with a maximum relative energy error of 0.001414556%, below the 0.1% tolerance. The small-angle period test measured 3.475144182 s against an expected 3.474609414 s, a relative error of approximately 0.01539%, below the 1% tolerance.
+
+Why: Both numerical tests are required evidence that the suspension model behaves as expected under controlled conditions.
+
+Planned: Verify that the simulation remains usable with reduced CPU performance.
+
+Did: Tested Chrome at 4× CPU throttling. Sixty simulated seconds required approximately 60.53 seconds of real time. The displayed FPS remained between 60.0 and 60.1, with no noticeable stuttering.
+
+Why: This provides evidence of stable fixed-timestep behavior under the tested conditions without assuming identical performance across all devices.
+
+Planned: Complete mobile layout verification and make additional interface improvements.
+
+Did: Tested the deployed game on an iPhone and identified overlapping controls in portrait orientation. Deferred further interface changes until after the required Module 12 submission.
+
+Why: The current desktop implementation and numerical validation are sufficiently developed for the beta milestone. Additional CSS changes could introduce regressions immediately before submission. Mobile compatibility remains an outstanding improvement rather than a completed verification.
