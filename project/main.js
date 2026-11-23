@@ -981,6 +981,13 @@ function frame(timestamp) {
         );
     }
 
+    if (document.getElementById("pageEnergyGraph")?.open) {
+        physicsVisuals.drawSeparateEnergyGraph(
+            document.getElementById("pageEnergyCanvas"),
+            document.getElementById("pageEnergySummary")
+        );
+    }
+
     if (showEnergy.checked || showCoordinates.checked) {
         const position = pointer.position;
 
@@ -1510,6 +1517,33 @@ window.addEventListener("DOMContentLoaded", () => {
 
     canvas.before(gameArea);
     gameArea.append(toolbar, canvas);
+
+    const pageDiagnostics = document.createElement("details");
+    pageDiagnostics.id = "pageDiagnostics";
+    pageDiagnostics.open =
+        new URLSearchParams(location.search).get("debug") === "1";
+
+    const diagnosticsTitle = document.createElement("summary");
+    diagnosticsTitle.textContent = "Physics diagnostics";
+
+    pageDiagnostics.append(
+        diagnosticsTitle,
+        document.getElementById("textDiagnostics")
+    );
+
+    const pageGraph = document.createElement("details");
+    pageGraph.id = "pageEnergyGraph";
+    pageGraph.innerHTML = `
+    <summary>Mechanical energy graph</summary>
+    <canvas id="pageEnergyCanvas" width="1000" height="180"
+        role="img"
+        aria-label="Mechanical energy versus simulated time"
+        aria-describedby="pageEnergySummary"></canvas>
+    <p id="pageEnergySummary">Waiting for energy samples.</p>
+`;
+
+    gameArea.before(pageDiagnostics, pageGraph);
+
     // Fullscreen includes HTML controls and the settings dialog.
     gameArea.append(gameMenu, coordinateOverlay);
     gameArea.append(chamberBadge, completionPanel);

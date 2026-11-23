@@ -1,8 +1,7 @@
 // Diagnostics only: this module never changes the physical world.
 let lastTextUpdate = -Infinity;
 let lastTextWorld = null;
-let debugEnabled =
-  new URLSearchParams(window.location.search).get("debug") === "1";
+let debugEnabled = false;
 let debugButton = null;
 let debugPanel = null;
 const DRIFT_TOLERANCE_PERCENT = 0.1;
@@ -99,14 +98,29 @@ export function drawHUD(ctx, world, initialEnergy, stats) {
 
   const now = performance.now();
   if (world !== lastTextWorld || now - lastTextUpdate >= 250) {
-    debugPanel.textContent = lines.join("\n");
+    debugPanel.replaceChildren();
+
+    for (const line of lines) {
+      const row = document.createElement("span");
+      row.textContent = line + "\n";
+
+      if (line.startsWith("Energy change:") && excessiveDrift) {
+        row.style.color = "#ff8080";
+        row.style.fontWeight = "bold";
+      }
+
+      debugPanel.append(row);
+    }
     debugPanel.classList.toggle("energy-alert", excessiveDrift);
     const text = document.getElementById("textDiagnostics");
     if (text) {
       text.style.whiteSpace = "pre-line";
-      text.textContent = debugEnabled
-        ? lines.join("\n")
-        : lines.slice(0, 5).join(" | ");
+      text.replaceChildren(
+        ...Array.from(
+          debugPanel.childNodes,
+          node => node.cloneNode(true)
+        )
+      );
     }
     lastTextWorld = world;
     lastTextUpdate = now;

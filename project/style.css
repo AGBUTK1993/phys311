@@ -1496,7 +1496,7 @@ input[type="checkbox"] {
   pointer-events: auto;
 }
 
-.game-area #gamePlaybackControls > * {
+.game-area #gamePlaybackControls>* {
   flex: 0 0 auto;
   margin: 0;
 }
@@ -1520,18 +1520,17 @@ input[type="checkbox"] {
   padding: 6px 8px;
 }
 
-.game-area #gameSliderPanel > .game-support-control {
+.game-area #gameSliderPanel>.game-support-control {
   grid-column: 1;
   grid-row: 1;
 }
 
-.game-area #gameSliderPanel > .rope-length-control {
+.game-area #gameSliderPanel>.rope-length-control {
   grid-column: 1;
   grid-row: 2;
 }
 
-.game-area #gameSliderPanel >
-:is(.game-support-control, .rope-length-control) {
+.game-area #gameSliderPanel>:is(.game-support-control, .rope-length-control) {
   grid-template-columns: 68px minmax(100px, 1fr) 48px;
   gap: 4px;
   font-size: 12px;
@@ -1561,7 +1560,7 @@ input[type="checkbox"] {
   padding: 2px 6px;
 }
 
-.game-area #gameSliderPanel > .rope-feedback {
+.game-area #gameSliderPanel>.rope-feedback {
   grid-column: 2;
   grid-row: 2;
   padding: 0;
@@ -1579,7 +1578,7 @@ input[type="checkbox"] {
   gap: 2px 6px;
 }
 
-.game-area.compact-game #gameSliderPanel > label {
+.game-area.compact-game #gameSliderPanel>label {
   grid-column: 1 / -1;
 }
 
@@ -1588,24 +1587,18 @@ input[type="checkbox"] {
   grid-row: 3;
 }
 
-.game-area.compact-game #gameSliderPanel > .rope-feedback {
+.game-area.compact-game #gameSliderPanel>.rope-feedback {
   grid-column: 2;
   grid-row: 3;
 }
 
 .game-area.compact-game .game-navigation-corner,
 .game-area.compact-game #gamePlaybackControls {
-  bottom: calc(
-    max(8px, env(safe-area-inset-bottom, 0px)) +
-    var(--slider-panel-height, 140px) + 8px
-  );
+  bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 140px) + 8px);
 }
 
 .game-area.compact-game.touch-layout .game-corner {
-  bottom: calc(
-    max(8px, env(safe-area-inset-bottom, 0px)) +
-    var(--slider-panel-height, 140px) + 60px
-  );
+  bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--slider-panel-height, 140px) + 60px);
 }
 
 /* The renderer measures this element to draw the teal banner. */
@@ -1670,7 +1663,44 @@ input[type="checkbox"] {
 }
 
 .game-area #gameSliderPanel[hidden],
-.game-area #gameSliderPanel > [hidden],
+.game-area #gameSliderPanel>[hidden],
 .game-area #gameChamberBadge[hidden] {
   display: none;
+}
+
+#pageDiagnostics,
+#pageEnergyGraph {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #b59a66;
+  border-radius: 6px;
+  background: #203d42;
+  color: #f6e7be;
+}
+
+#pageDiagnostics>summary,
+#pageEnergyGraph>summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#pageDiagnostics #textDiagnostics {
+  margin: 10px 0 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: 12px/1.5 monospace;
+  overflow-wrap: anywhere;
+}
+
+#pageEnergyCanvas {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 180px;
+  margin-top: 10px;
+}
+
+#pageEnergySummary {
+  font-size: 12px;
 }

@@ -133,3 +133,7 @@ This artwork is not implemented yet.
 Planned: Keep the gameplay controls usable in narrow windows and align the chamber and view controls with the teal banner.
 Did: Renamed the horizontal slider label, made the compact layout respond to the game area's width, replaced the latest slider-layout rules, and aligned the banner graphics with its HTML controls.
 Why: The previous layout could squeeze slider tracks and place controls outside the banner. Other game expansion is deferred while completing the required beta checks and documentation.
+
+Planned: Make physics diagnostics accessible without covering gameplay on startup.
+Did: Added collapsible diagnostics and graph sections above the canvas while retaining the B/G overlay panels.
+Why: Reviewers can inspect the measurements without immediately obstructing the game; fullscreen users retain the existing panels.
