@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Jupyter generated checkpoints
+.ipynb_checkpoints/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Local project ZIP backups
+project_ZIP*.zip
+
+# Common editor and operating system files
+.DS_Store
+Thumbs.db
