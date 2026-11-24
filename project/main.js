@@ -943,7 +943,17 @@ function frame(timestamp) {
     const timeBeforeFrame = world.time;
     const physicsStart = performance.now();
 
-    if (!paused && !finished) {
+    // Do not advance physics while the splash or main menu is visible.
+    const menuOverlay = document.getElementById("ui-overlay-root");
+    const menuOverlayVisible =
+        menuOverlay !== null &&
+        !menuOverlay.classList.contains("ui-hidden");
+
+    if (menuOverlayVisible) {
+        accumulator = 0;
+    }
+
+    if (!paused && !finished && !menuOverlayVisible) {
         accumulator += Math.min(elapsed, 0.1) * simulationSpeed;
 
         while (
@@ -1402,6 +1412,17 @@ const menuResume = document.getElementById("menuResume");
 const menuRestart = document.getElementById("menuRestart");
 const menuClose = document.getElementById("menuClose");
 const gameMenuStatus = document.getElementById("gameMenuStatus");
+// Resume an existing chamber when Play is selected.
+window.addEventListener("burial:resume-game", () => {
+    if (finished) return;
+
+    paused = false;
+    accumulator = 0;
+    previousTimestamp = null;
+
+    pauseButton.textContent = "Pause";
+    status.textContent = "Simulation running.";
+});
 
 function openGameMenu() {
     if (gameMenu.open) return;
@@ -1450,12 +1471,24 @@ function closeGameMenu(resumePlay = false) {
 
 menuButton.addEventListener("click", openGameMenu);
 
+// Return from the in-game settings to the new main menu.
+document.getElementById("menuMainMenu").addEventListener(
+    "click",
+    () => {
+        closeGameMenu(false);
+
+        window.dispatchEvent(
+            new Event("burial:show-main-menu")
+        );
+    }
+);
+
 menuResume.addEventListener("click", () => {
     if (!finished) closeGameMenu(true);
 });
 
 menuClose.addEventListener("click", () => {
-    closeGameMenu();
+    closeGameMenu(true);
 });
 
 menuRestart.addEventListener("click", () => {
@@ -1517,6 +1550,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
     canvas.before(gameArea);
     gameArea.append(toolbar, canvas);
+
+    // Return from the original project page to gameplay.
+    const returnGameButton = document.createElement("button");
+    returnGameButton.type = "button";
+    returnGameButton.id = "returnGameButton";
+    returnGameButton.textContent = "Return to Game";
+    returnGameButton.hidden = true;
+
+    gameArea.before(returnGameButton);
 
     const pageDiagnostics = document.createElement("details");
     pageDiagnostics.id = "pageDiagnostics";
@@ -1649,18 +1691,63 @@ window.addEventListener("DOMContentLoaded", () => {
             document.body.style.overflow = previousBodyOverflow;
         }
 
+        const projectPageButton =
+            document.getElementById("menuProjectPage");
+
+        // Leave immersive gameplay and display the original webpage.
+        projectPageButton.addEventListener("click", async () => {
+            closeGameMenu(false);
+
+            if (document.fullscreenElement === gameArea) {
+                try {
+                    await document.exitFullscreen();
+                } catch (error) {
+                    console.warn("Could not leave fullscreen:", error);
+                    return;
+                }
+            }
+
+            setExpandedView(false);
+            returnGameButton.hidden = false;
+        });
+
+        // Return to immersive gameplay.
+        returnGameButton.addEventListener("click", () => {
+            returnGameButton.hidden = true;
+            setExpandedView(true);
+
+            if (!finished) {
+                paused = false;
+                accumulator = 0;
+                previousTimestamp = null;
+                pauseButton.textContent = "Pause";
+                status.textContent = "Simulation running.";
+            }
+
+            focusGame();
+        });
+
         gameArea.classList.toggle("is-expanded", expanded);
-        fullscreenButton.textContent = expanded
-            ? "Exit expanded"
-            : supportsFullscreen ? "Fullscreen" : "Expand";
+        fullscreenButton.textContent =
+            document.fullscreenElement === gameArea
+                ? "Exit fullscreen"
+                : supportsFullscreen
+                    ? "Fullscreen"
+                    : "Expanded view";
 
         fullscreenButton.setAttribute(
             "aria-label",
-            expanded ? "Exit expanded game view"
-                : supportsFullscreen ? "Enter fullscreen"
-                    : "Expand game view"
+            document.fullscreenElement === gameArea
+                ? "Exit fullscreen"
+                : supportsFullscreen
+                    ? "Enter fullscreen"
+                    : "Expanded game view"
         );
-        fullscreenButton.setAttribute("aria-pressed", String(expanded));
+
+        fullscreenButton.setAttribute(
+            "aria-pressed",
+            String(document.fullscreenElement === gameArea)
+        );
 
         clearSupportKeys();
         pointer.cancelDrag();
@@ -1677,45 +1764,22 @@ window.addEventListener("DOMContentLoaded", () => {
     fullscreenButton.addEventListener("click", async () => {
         clearSupportKeys();
 
-        if (expandedView || !supportsFullscreen) {
-            setExpandedView(!expandedView);
-            if (!gameMenu.open) focusGame();
-            return;
-        }
-
         try {
             if (document.fullscreenElement === gameArea) {
+                // Leave browser fullscreen, but stay in the game.
                 await document.exitFullscreen();
+            } else if (supportsFullscreen) {
+                // Keep the game expanded beneath browser fullscreen.
+                setExpandedView(true);
+                await gameArea.requestFullscreen();
             } else {
-                await gameArea.requestFullscreen({
-                    keyboardLock: "browser",
-                });
-
-                // Compatibility with browsers exposing Keyboard.lock().
-                if (
-                    document.fullscreenElement === gameArea &&
-                    navigator.keyboard?.lock
-                ) {
-                    try {
-                        await navigator.keyboard.lock(["Escape"]);
-
-                        // Fullscreen may have ended while permission
-                        // was being handled.
-                        if (document.fullscreenElement !== gameArea) {
-                            navigator.keyboard.unlock();
-                        }
-                    } catch (error) {
-                        setExpandedView(true);
-                        status.textContent =
-                            "Expanded game view. Use Exit expanded to return.";
-                        console.info("Using expanded view:", error);
-                    }
-                }
+                // Browsers without fullscreen support stay expanded.
+                setExpandedView(true);
             }
         } catch (error) {
-            status.textContent =
-                "Fullscreen could not start. You can continue playing here.";
             console.warn("Fullscreen request failed:", error);
+            status.textContent =
+                "Browser fullscreen is unavailable. Expanded view remains active.";
         }
 
         if (!gameMenu.open) focusGame();
@@ -2128,7 +2192,8 @@ window.addEventListener("DOMContentLoaded", () => {
         if (
             key !== "escape" &&
             editingControl &&
-            !debugFromButton
+            !debugFromButton &&
+            !(key === "m" && gameMenu.open)
         ) return;
         if (!["f", "m", "b", "c", "g", "escape"].includes(key)) return;
 
@@ -2161,13 +2226,25 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 
         if (key === "f") {
-            fullscreenButton.click();
+            if (document.fullscreenElement === gameArea) {
+                document.exitFullscreen().catch(error => {
+                    console.warn("Could not exit fullscreen:", error);
+                });
+            } else if (supportsFullscreen) {
+                gameArea.requestFullscreen().catch(error => {
+                    console.warn("Could not enter fullscreen:", error);
+                });
+            } else {
+                setExpandedView(true);
+            }
+
             return;
         }
 
         if (key === "m") {
             if (gameMenu.open) {
-                closeGameMenu(false);
+                // Closing with M resumes the simulation.
+                closeGameMenu(true);
             } else {
                 openGameMenu();
             }
@@ -2188,17 +2265,25 @@ window.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (expandedView) {
-            setExpandedView(false);
-            focusGame();
+        // Escape during gameplay opens settings instead of
+        // returning to the original webpage.
+        if (key === "escape") {
+            openGameMenu();
             return;
         }
 
-        // With no menu open, Escape exits fullscreen.
+        // Escape browser fullscreen before exiting expanded view.
         if (document.fullscreenElement === gameArea) {
             document.exitFullscreen().catch(error => {
                 console.warn("Could not exit fullscreen:", error);
             });
+            return;
+        }
+
+        if (expandedView) {
+            setExpandedView(false);
+            focusGame();
+            return;
         }
     }, { capture: true });
 
