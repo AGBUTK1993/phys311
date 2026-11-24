@@ -2575,6 +2575,9 @@ window.addEventListener("DOMContentLoaded", () => {
         liftLevelControls
     );
 
+    // Start the game in the full-window expanded view.
+    setExpandedView(true);
+
     // Start drawing after the game containers and controls exist.
     requestAnimationFrame(frame);
 });
