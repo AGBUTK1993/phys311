@@ -1,0 +1,209 @@
+/* =========================================================
+   THE BURIAL SHAFT — Splash Screen and Main Menu
+   ========================================================= */
+
+/* Full-window overlay */
+#ui-overlay-root {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    pointer-events: none;
+    font-family: Arial, sans-serif;
+}
+
+.ui-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    box-sizing: border-box;
+    padding: 20px;
+}
+
+.ui-screen.active {
+    display: flex;
+}
+
+/* =========================================================
+   SPLASH SCREEN
+   ========================================================= */
+
+#splash-screen {
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(255, 220, 140, 0.12),
+            transparent 45%
+        ),
+        linear-gradient(to bottom, #102c33, #06171c);
+
+    color: #f2e4b8;
+    text-align: center;
+}
+
+.splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 100%;
+
+    opacity: 0;
+    transform: translateY(10px);
+    animation: splashFadeIn 1.2s ease forwards;
+}
+
+#splash-cartouche {
+    display: block;
+    max-width: min(340px, 75vw);
+    max-height: 40vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+
+    border-radius: 10px;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+}
+
+.splash-title {
+    margin: 0.25rem 0 0;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: 0.08em;
+}
+
+.splash-subtitle {
+    margin: 0;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.85;
+}
+
+.splash-continue {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    opacity: 0.8;
+    animation: pulseText 1.8s ease-in-out infinite;
+}
+
+/* =========================================================
+   MAIN MENU
+   ========================================================= */
+
+#main-menu {
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(255, 215, 120, 0.1),
+            transparent 55%
+        ),
+        linear-gradient(to bottom, #102c33, #06171c);
+
+    color: #f2e4b8;
+    text-align: center;
+}
+
+.menu-panel {
+    box-sizing: border-box;
+    background: rgba(16, 44, 51, 0.9);
+    border: 2px solid #c8a96b;
+    border-radius: 18px;
+    padding: 2rem;
+    width: min(92vw, 460px);
+    max-height: 90vh;
+    overflow-y: auto;
+
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.menu-title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: 0.05em;
+}
+
+.menu-subtitle {
+    margin: 0 0 1.5rem;
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.menu-button {
+    background: #20464e;
+    color: #f2e4b8;
+    border: 2px solid #c8a96b;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.menu-button:hover:not(:disabled),
+.menu-button:focus-visible:not(:disabled) {
+    background: #2a5a64;
+    transform: translateY(-2px);
+}
+
+.menu-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Hide the UI overlay when gameplay begins */
+.ui-hidden {
+    display: none !important;
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes splashFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseText {
+    0%, 100% {
+        opacity: 0.45;
+    }
+
+    50% {
+        opacity: 0.95;
+    }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .splash-content,
+    .splash-continue {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .menu-button {
+        transition: none;
+    }
+}

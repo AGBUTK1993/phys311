@@ -8,6 +8,7 @@
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./control-help.css">
+    <link rel="stylesheet" href="menu-ui.css">
 </head>
 
 <body>
@@ -291,8 +292,55 @@
 
     </main>
 
+    <!-- Splash screen and main menu -->
+    <div id="ui-overlay-root">
+        <section id="splash-screen" class="ui-screen active" aria-label="Splash screen">
+
+            <div class="splash-content">
+                <img id="splash-cartouche" src="./assets/alexander-cartouche.jpg"
+                    alt="Cartouche of Alexander the Great">
+
+                <h1 class="splash-title">Alex Bebb</h1>
+                <p class="splash-subtitle">presents</p>
+                <p class="splash-continue">
+                    Click or press any key to continue
+                </p>
+            </div>
+        </section>
+
+        <section id="main-menu" class="ui-screen" aria-label="Main menu">
+
+            <div class="menu-panel">
+                <h1 class="menu-title">The Burial Shaft</h1>
+                <p class="menu-subtitle">
+                    An interactive mechanics game
+                </p>
+
+                <div class="menu-buttons">
+                    <button id="play-button" class="menu-button">
+                        Play
+                    </button>
+
+                    <button id="level-select-button" class="menu-button" disabled>
+                        Level Select
+                    </button>
+
+                    <button id="instructions-button" class="menu-button" disabled>
+                        Instructions
+                    </button>
+
+                    <button id="physics-lab-button" class="menu-button" disabled>
+                        Physics Lab
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+
     <script type="module" src="./main.js"></script>
     <script type="module" src="./control-help.js"></script>
+    <script src="./menu-ui.js"></script>
 </body>
 
 </html>
