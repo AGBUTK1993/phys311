@@ -598,6 +598,22 @@ function applyPhysicsParameters() {
 let selectedLiftLevel = 0;
 const completedLiftLevels = new Set();
 
+// Share the existing completion records with the menu interface.
+function publishChamberProgress() {
+    window.dispatchEvent(
+        new CustomEvent("burial:progress-updated", {
+            detail: {
+                completedIds: [...completedLiftLevels]
+            }
+        })
+    );
+}
+
+// Allow the level-selection screen to request current progress.
+window.addEventListener("burial:request-progress", () => {
+    publishChamberProgress();
+});
+
 // Replace the old world with a fresh copy of the initial scene.
 function restartSimulation() {
     pointer.cancelDrag();
@@ -871,6 +887,7 @@ function advanceOneStep() {
 
             if (world.delivery.won) {
                 completedLiftLevels.add(world.liftLevel.id);
+                publishChamberProgress();
                 syncLiftLevelControls();
                 paused = true;
                 finished = true;
@@ -1174,13 +1191,23 @@ completionPanel.append(completionMessage, completionActions);
 function showChamberSelection() {
     if (sceneSelect.value !== "suspension") return;
 
-    openGameMenu();
-    completionPanel.hidden = true;
-    liftLevelControls.hidden = false;
-    menuChamberSelect.setAttribute("aria-expanded", "true");
+    // Stop gameplay while the level-selection screen is open.
+    paused = true;
+    accumulator = 0;
+    previousTimestamp = null;
 
-    liftLevelSelect.focus({ preventScroll: true });
-    liftLevelControls.scrollIntoView({ block: "nearest" });
+    // Close the old settings dialog if it is open.
+    if (gameMenu.open) {
+        gameMenu.close();
+    }
+
+    // Hide the completion panel while browsing chambers.
+    completionPanel.hidden = true;
+
+    // Open the new full-window level-selection screen.
+    window.dispatchEvent(
+        new Event("burial:show-level-select")
+    );
 }
 
 menuChamberSelect.addEventListener(
@@ -1270,6 +1297,39 @@ liftLevelSelect.addEventListener("change", () => {
     selectedLiftLevel = Number(liftLevelSelect.value);
     restartSimulation();
     keepMenuPaused();
+});
+
+// Initialize a chamber selected from the new level screen.
+window.addEventListener("burial:start-chamber", (event) => {
+    const index = event.detail?.index;
+
+    // Validate the selection against the real chamber definitions.
+    if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= LIFT_LEVELS.length
+    ) {
+        console.warn("Unknown chamber index:", index);
+        return;
+    }
+
+    // Select the requested chamber.
+    selectedLiftLevel = index;
+
+    // Normal gameplay, not the conservative validation setup.
+    conservativeModeInput.checked = false;
+
+    // Use the existing scene-selection pathway so that
+    // the physics and interface reset together.
+    sceneSelect.value = "suspension";
+    sceneSelect.dispatchEvent(
+        new Event("change", { bubbles: true })
+    );
+
+    console.info(
+        "Starting chamber:",
+        LIFT_LEVELS[index].name
+    );
 });
 
 nextChamberButton.addEventListener("click", () => {

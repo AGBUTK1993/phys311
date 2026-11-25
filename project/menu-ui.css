@@ -32,11 +32,9 @@
 
 #splash-screen {
     background:
-        radial-gradient(
-            circle at center,
+        radial-gradient(circle at center,
             rgba(255, 220, 140, 0.12),
-            transparent 45%
-        ),
+            transparent 45%),
         linear-gradient(to bottom, #102c33, #06171c);
 
     color: #f2e4b8;
@@ -94,11 +92,9 @@
 
 #main-menu {
     background:
-        radial-gradient(
-            circle at center,
+        radial-gradient(circle at center,
             rgba(255, 215, 120, 0.1),
-            transparent 55%
-        ),
+            transparent 55%),
         linear-gradient(to bottom, #102c33, #06171c);
 
     color: #f2e4b8;
@@ -185,7 +181,9 @@
 }
 
 @keyframes pulseText {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.45;
     }
 
@@ -196,6 +194,7 @@
 
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
+
     .splash-content,
     .splash-continue {
         animation: none;
@@ -206,4 +205,168 @@
     .menu-button {
         transition: none;
     }
+}
+
+#chamber-select {
+    background:
+        radial-gradient(circle at top,
+            rgba(201, 169, 107, 0.12),
+            transparent 55%),
+        linear-gradient(to bottom, #102c33, #06171c);
+
+    color: #f2e4b8;
+    overflow-y: auto;
+    align-items: flex-start;
+}
+
+.chamber-select-layout {
+    width: min(1100px, 100%);
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 24px 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.chamber-select-header {
+    text-align: center;
+}
+
+.chamber-select-header h1 {
+    color: #f2e4b8;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin: 0 0 10px;
+}
+
+.chamber-select-header p {
+    margin: 0;
+    opacity: 0.85;
+}
+
+.chamber-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.chamber-card {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-align: left;
+    border: 2px solid #a98b55;
+    border-radius: 14px;
+    background: #17363d;
+    color: #f2e4b8;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.chamber-card:hover,
+.chamber-card:focus-visible {
+    border-color: #f2d99a;
+    transform: translateY(-3px);
+}
+
+.chamber-preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0a2026;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #adac9d;
+    font-size: 0.9rem;
+}
+
+.chamber-card-info {
+    padding: 16px;
+}
+
+.chamber-card-info h2 {
+    margin: 0 0 8px;
+    color: #f2e4b8;
+    font-size: 1.2rem;
+}
+
+.chamber-card-info p {
+    margin: 0 0 12px;
+    line-height: 1.45;
+}
+
+.chamber-card-info span {
+    font-size: 0.8rem;
+    color: #d3b77c;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.chamber-select-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
+}
+
+.chamber-select-footer .menu-button {
+    min-width: 220px;
+}
+
+/* Smaller browser windows and phones */
+@media (max-width: 640px) {
+    .chamber-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chamber-select-layout {
+        padding: 12px 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chamber-card {
+        transition: none;
+    }
+}
+
+/* Chamber screenshot previews */
+.chamber-preview {
+    overflow: hidden;
+}
+
+.chamber-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Completed chamber indicator */
+.chamber-card.chamber-completed {
+    border-color: #73a997;
+}
+
+.chamber-card.chamber-completed .chamber-card-info span {
+    color: #a4dfc4;
+}
+
+/* Locked chambers, available for future progression mode */
+.chamber-card.chamber-locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.65);
+}
+
+.chamber-card.chamber-locked:hover {
+    transform: none;
+}
+
+.chamber-card.chamber-locked .chamber-card-info span {
+    color: #c8b8a1;
 }

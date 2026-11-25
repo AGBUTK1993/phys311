@@ -8,6 +8,44 @@
     const mainMenu = document.getElementById("main-menu");
     const playButton = document.getElementById("play-button");
 
+    const levelSelectButton =
+        document.getElementById("level-select-button");
+
+    const chamberSelect =
+        document.getElementById("chamber-select");
+
+    const chamberBackButton =
+        document.getElementById("chamber-back-button");
+
+    // Preview images are optional until the chambers are finalized.
+    function initializeChamberPreviews() {
+        chamberSelect.querySelectorAll(".chamber-card").forEach(
+            (card) => {
+                const path = card.dataset.preview?.trim();
+                if (!path) return;
+
+                const preview = card.querySelector(".chamber-preview");
+                if (!preview) return;
+
+                const image = document.createElement("img");
+                image.alt = `Preview of ${card.querySelector("h2")?.textContent || "chamber"}`;
+                image.loading = "lazy";
+
+                image.addEventListener("load", () => {
+                    preview.replaceChildren(image);
+                });
+
+                image.addEventListener("error", () => {
+                    console.warn("Chamber preview unavailable:", path);
+                });
+
+                image.src = path;
+            }
+        );
+    }
+
+    initializeChamberPreviews();
+
     if (!overlayRoot || !splashScreen || !mainMenu || !playButton) {
         console.error("Menu UI: Required HTML elements were not found.");
         return;
@@ -17,7 +55,7 @@
 
     // Display one screen while hiding the other.
     function showScreen(screenToShow) {
-        [splashScreen, mainMenu].forEach((screen) => {
+        [splashScreen, mainMenu, chamberSelect].forEach((screen) => {
             screen.classList.remove("active");
         });
 
@@ -81,6 +119,21 @@
             return;
         }
 
+        // Escape returns from chamber selection to the main menu.
+        if (
+            chamberSelect.classList.contains("active") &&
+            event.key === "Escape"
+        ) {
+            event.preventDefault();
+            returnToMainMenu();
+            return;
+        }
+
+        // Let focused chamber cards and Back respond to Enter/Space.
+        if (chamberSelect.classList.contains("active")) {
+            return;
+        }
+
         // Enter or Space starts gameplay from the main menu.
         if (
             mainMenu.classList.contains("active") &&
@@ -92,6 +145,91 @@
         }
     }, { capture: true });
 
+    // Open the full-window chamber-selection screen.
+    window.addEventListener("burial:show-level-select", () => {
+        hasLeftSplash = true;
+
+        overlayRoot.classList.remove("ui-hidden");
+        showScreen(chamberSelect);
+
+        // Give keyboard focus to the first chamber card.
+        const firstCard = chamberSelect.querySelector(".chamber-card");
+
+        if (firstCard) {
+            firstCard.focus({ preventScroll: true });
+        }
+    });
+    window.dispatchEvent(
+        new Event("burial:request-progress")
+    );
+
+    // Development feature flags.
+    // Keep locking disabled so every chamber remains testable.
+    const GAME_FEATURES = Object.freeze({
+        enforceLevelUnlocks: false // true = only unlock next chamber after completing the previous one
+    });
+
+    // Keep completion indicators synchronized with the simulation.
+    const completedChamberIds = new Set();
+
+    window.addEventListener("burial:progress-updated", (event) => {
+        completedChamberIds.clear();
+
+        for (const id of event.detail?.completedIds || []) {
+            completedChamberIds.add(id);
+        }
+
+        updateChamberCards();
+    });
+
+    function updateChamberCards() {
+        const cards = [
+            ...chamberSelect.querySelectorAll(".chamber-card")
+        ];
+
+        cards.forEach((card, index) => {
+            const completed =
+                completedChamberIds.has(card.dataset.levelId);
+
+            // Chamber 1 is always available.
+            // Later chambers unlock when the previous one is completed.
+            const previousId =
+                index > 0 ? cards[index - 1].dataset.levelId : null;
+
+            const unlocked =
+                !GAME_FEATURES.enforceLevelUnlocks ||
+                index === 0 ||
+                completed ||
+                completedChamberIds.has(previousId);
+
+            card.disabled = !unlocked;
+
+            const status =
+                card.querySelector(".chamber-card-info span");
+
+            if (status) {
+                status.textContent = completed
+                    ? "Completed ✓"
+                    : unlocked
+                        ? "Available"
+                        : "Locked";
+            }
+
+            card.classList.toggle(
+                "chamber-completed",
+                completed
+            );
+
+            card.classList.toggle(
+                "chamber-locked",
+                !unlocked
+            );
+        });
+    }
+
+    // Initialize the cards before progress has been reported.
+    updateChamberCards();
+
     // Reopen the main menu from gameplay.
     window.addEventListener("burial:show-main-menu", () => {
         hasLeftSplash = true;
@@ -102,6 +240,52 @@
         // Move keyboard focus into the menu.
         playButton.focus({ preventScroll: true });
     });
+
+    // Open the chamber-selection screen.
+    levelSelectButton.addEventListener("click", () => {
+        showScreen(chamberSelect);
+        chamberBackButton.focus({ preventScroll: true });
+
+        window.dispatchEvent(
+            new Event("burial:request-progress")
+        );
+    });
+
+    // Return from chamber selection to the main menu.
+    function returnToMainMenu() {
+        showScreen(mainMenu);
+        levelSelectButton.focus({ preventScroll: true });
+    }
+
+    chamberBackButton.addEventListener(
+        "click",
+        returnToMainMenu
+    );
+
+    // Start a selected chamber from its initial conditions.
+    chamberSelect.querySelectorAll(".chamber-card").forEach(
+        (card) => {
+            card.addEventListener("click", () => {
+                const index = Number(card.dataset.chamber);
+
+                // Ignore missing or invalid chamber identifiers.
+                if (!Number.isInteger(index) || index < 0) {
+                    console.warn("Invalid chamber selection:", index);
+                    return;
+                }
+
+                // Ask the simulation to initialize this chamber.
+                window.dispatchEvent(
+                    new CustomEvent("burial:start-chamber", {
+                        detail: { index }
+                    })
+                );
+
+                // Enter gameplay and restore keyboard focus.
+                startGame();
+            });
+        }
+    );
 
     // Start gameplay when Play is clicked.
     playButton.addEventListener("click", startGame);

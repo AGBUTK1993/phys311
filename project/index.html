@@ -333,7 +333,7 @@
                         Play
                     </button>
 
-                    <button id="level-select-button" class="menu-button" disabled>
+                    <button id="level-select-button" class="menu-button">
                         Level Select
                     </button>
 
@@ -347,8 +347,76 @@
                 </div>
             </div>
         </section>
-    </div>
+        <!-- Full-window chamber selection -->
+        <section id="chamber-select" class="ui-screen" aria-label="Select a chamber">
 
+            <div class="chamber-select-layout">
+                <header class="chamber-select-header">
+                    <h1>Select Chamber</h1>
+                    <p>
+                        Choose a chamber to explore.
+                        Each presents a different suspension challenge.
+                    </p>
+                </header>
+
+                <div class="chamber-grid">
+                    <button class="chamber-card" type="button" data-chamber="0" data-level-id="first-delivery"
+                        data-preview="">
+                        <div class="chamber-preview">
+                            Preview coming soon
+                        </div>
+                        <div class="chamber-card-info">
+                            <h2>01 — First Delivery</h2>
+                            <p>Guide the artifact into its delivery zone.</p>
+                            <span>Available</span>
+                        </div>
+                    </button>
+
+                    <button class="chamber-card" type="button" data-chamber="1" data-level-id="return-passage"
+                        data-preview="">
+                        <div class="chamber-preview">
+                            Preview coming soon
+                        </div>
+                        <div class="chamber-card-info">
+                            <h2>02 — Return Passage</h2>
+                            <p>Navigate toward a narrower zone on the left.</p>
+                            <span>Available</span>
+                        </div>
+                    </button>
+
+                    <button class="chamber-card" type="button" data-chamber="2" data-level-id="steady-hands"
+                        data-preview="">
+                        <div class="chamber-preview">
+                            Preview coming soon
+                        </div>
+                        <div class="chamber-card-info">
+                            <h2>03 — Steady Hands</h2>
+                            <p>Control a swing with reduced damping.</p>
+                            <span>Available</span>
+                        </div>
+                    </button>
+
+                    <button class="chamber-card" type="button" data-chamber="3" data-level-id="Upper Gallery"
+                        data-preview=""`>
+                        <div class="chamber-preview">
+                            Preview coming soon
+                        </div>
+                        <div class="chamber-card-info">
+                            <h2>04 — Upper Gallery</h2>
+                            <p>Use vertical rail movement to deliver higher.</p>
+                            <span>Available</span>
+                        </div>
+                    </button>
+                </div>
+
+                <footer class="chamber-select-footer">
+                    <button id="chamber-back-button" class="menu-button" type="button">
+                        Back to Main Menu
+                    </button>
+                </footer>
+            </div>
+        </section>
+    </div>
 
     <script type="module" src="./main.js"></script>
     <script type="module" src="./control-help.js"></script>
