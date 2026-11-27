@@ -148,9 +148,46 @@ export function createRopeControls({
             gearLocked ||
             world.winchGear === world.winchGears.length - 1;
 
+        // Visual warnings based on the current fraction of rope strength.
+        // These do not change the physics or breaking threshold.
+        const tensionRatio = world.breakStrength > 0
+            ? world.tension / world.breakStrength
+            : 0;
+
+        feedback.classList.toggle(
+            "rope-warning",
+            world.ropeState !== "broken" &&
+            tensionRatio >= 0.94 &&
+            tensionRatio < 0.98
+        );
+
+        feedback.classList.toggle(
+            "rope-critical",
+            world.ropeState !== "broken" &&
+            tensionRatio >= 0.98
+        );
+
+        feedback.classList.toggle(
+            "rope-broken",
+            world.ropeState === "broken"
+        );
+
         feedback.textContent = world.ropeState === "broken"
-            ? "Rope broken — Restart this chamber."
+            ? `Rope broken! Peak tension: ` +
+            `${world.peakTension.toFixed(1)} N ` +
+            `(limit: ${world.breakStrength} N).`
             : `${world.ropeState} · ` +
-            `${world.tension.toFixed(1)} / ${world.breakStrength} N`;
-    };
+            `${world.tension.toFixed(1)} / ${world.breakStrength} N · ` +
+            `Peak: ${world.peakTension.toFixed(1)} N`;
+
+        if (world.ropeState !== "broken") {
+            const warning = tensionRatio >= 0.98
+                ? "CRITICAL TENSION — "
+                : tensionRatio >= 0.94
+                    ? "Tension caution — "
+                    : "";
+
+            feedback.textContent = warning + feedback.textContent;
+        }
+    }
 }

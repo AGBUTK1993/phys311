@@ -1704,3 +1704,20 @@ input[type="checkbox"] {
 #pageEnergySummary {
   font-size: 12px;
 }
+
+/* Phase 4A — rope-tension warnings */
+
+.game-area .rope-feedback.rope-warning {
+  color: #f0bf60;
+  font-weight: 700;
+}
+
+.game-area .rope-feedback.rope-critical {
+  color: #ff875f;
+  font-weight: 700;
+}
+
+.game-area .rope-feedback.rope-broken {
+  color: #ff6262;
+  font-weight: 700;
+}

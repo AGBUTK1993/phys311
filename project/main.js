@@ -446,6 +446,58 @@ let paused = false;
 let finished = false;
 let simulationSpeed = 1;
 
+// Gameplay performance measurements for the current attempt.
+// These are observational and do not affect the physics.
+let attemptMetrics = null;
+
+function recordAttemptMetrics() {
+    if (!attemptMetrics || !world?.liftLevel) return;
+
+    // Use simulation time, not real-world clock time.
+    attemptMetrics.simulatedTime = world.time;
+
+    if (Number.isFinite(world.peakTension)) {
+        attemptMetrics.peakTension = Math.max(
+            attemptMetrics.peakTension,
+            world.peakTension
+        );
+    }
+
+    // The current suspension model measures swing with theta.
+    // Convert radians to degrees for player-facing statistics.
+    if (
+        world.ropeState === "taut" &&
+        Number.isFinite(world.theta)
+    ) {
+        attemptMetrics.maxSwingDegrees = Math.max(
+            attemptMetrics.maxSwingDegrees,
+            Math.abs(world.theta) * 180 / Math.PI
+        );
+    }
+}
+
+function reportAttemptOutcome(outcome) {
+    if (!attemptMetrics || attemptMetrics.reported) return;
+
+    recordAttemptMetrics();
+
+    attemptMetrics.outcome = outcome;
+    attemptMetrics.reported = true;
+
+    console.group("Burial Shaft — Chamber Attempt");
+    console.table({
+        Chamber: world.liftLevel.name,
+        Outcome: attemptMetrics.outcome,
+        "Simulated time (s)":
+            attemptMetrics.simulatedTime.toFixed(2),
+        "Peak tension (N)":
+            attemptMetrics.peakTension.toFixed(2),
+        "Maximum swing (degrees)":
+            attemptMetrics.maxSwingDegrees.toFixed(2)
+    });
+    console.groupEnd();
+}
+
 const stats = {
     fps: 0,
     physicsMs: 0,
@@ -719,6 +771,18 @@ function restartSimulation() {
     paused = false;
     finished = false;
 
+    // Begin a fresh set of measurements for this chamber attempt.
+    attemptMetrics = world.liftLevel
+        ? {
+            chamberId: world.liftLevel.id,
+            simulatedTime: 0,
+            peakTension: 0,
+            maxSwingDegrees: 0,
+            outcome: null,
+            reported: false
+        }
+        : null;
+
     stats.fps = 0;
     stats.physicsMs = 0;
     stats.renderMs = 0;
@@ -852,6 +916,9 @@ function advanceOneStep() {
         world.step(DT);
         assertUsableState(world);
 
+        // Sample after the physics step has advanced.
+        recordAttemptMetrics();
+
         // Stop immediately when the rope model becomes invalid.
         if (world.stoppedForSlack) {
             paused = true;
@@ -870,6 +937,8 @@ function advanceOneStep() {
 
             // Show the release and fall before ending the attempt.
             if (world.time - world.breakTime >= 1.5) {
+                reportAttemptOutcome("Rope broken");
+
                 paused = true;
                 finished = true;
                 accumulator = 0;
@@ -886,6 +955,8 @@ function advanceOneStep() {
             world.delivery.update(world.load, DT);
 
             if (world.delivery.won) {
+                reportAttemptOutcome("Delivered");
+
                 completedLiftLevels.add(world.liftLevel.id);
                 publishChamberProgress();
                 syncLiftLevelControls();

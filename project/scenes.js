@@ -235,6 +235,26 @@ export function createSuspensionScene(levelIndex = 0) {
     world.liftLevel = level;
     world.liftLevelIndex = LIFT_LEVELS.indexOf(level);
 
+    // Chamber-specific physical properties.
+    // These values are applied before the initial state is computed.
+    // Configure the physical load for this chamber.
+    const artifact = level.artifact;
+
+    world.load.m = artifact.mass;
+    world.load.invMass = 1 / artifact.mass;
+    world.load.radius = artifact.radius;
+    world.load.name = artifact.name;
+
+    world.breakStrength = level.ropeBreakingStrength;
+
+    // Optional chamber-specific winch gearing.
+    // Make copies so chamber data is never modified during gameplay.
+    if (level.winchGears) {
+        world.winchGears = level.winchGears.map(
+            gear => ({ ...gear })
+        );
+    }
+
     world.anchor.pos.x = level.startX;
     world.supportTarget = level.startX;
     world.theta = level.theta;

@@ -7,6 +7,15 @@ export const LIFT_LEVELS = [
         startX: 0,
         theta: 0.2,
         dampingRate: 0.35,
+
+        artifact: {
+            id: "practice-load-1",
+            name: "Training artifact",
+            mass: 2,
+            radius: 0.22,
+        },
+        ropeBreakingStrength: 22,
+
         zone: {
             xMin: 1.2,
             xMax: 2.8,
@@ -21,6 +30,15 @@ export const LIFT_LEVELS = [
         startX: 2,
         theta: -0.15,
         dampingRate: 0.35,
+
+        artifact: {
+            id: "practice-load-2",
+            name: "Passage artifact",
+            mass: 2,
+            radius: 0.22,
+        },
+        ropeBreakingStrength: 22,
+
         zone: {
             xMin: -2.8,
             xMax: -1.8,
@@ -35,6 +53,34 @@ export const LIFT_LEVELS = [
         startX: -2.5,
         theta: 0.1,
         dampingRate: 0.18,
+
+        artifact: {
+            id: "practice-load-3",
+            name: "Precision artifact",
+            mass: 2,
+            radius: 0.22,
+        },
+        ropeBreakingStrength: 22,
+
+        // Deliberately gentler gearing for a precision chamber.
+        winchGears: [
+            {
+                name: "Fine",
+                speed: 0.15,
+                acceleration: 0.20
+            },
+            {
+                name: "Normal",
+                speed: 0.35,
+                acceleration: 0.65
+            },
+            {
+                name: "Fast",
+                speed: 0.70,
+                acceleration: 1.80
+            }
+        ],
+
         zone: {
             xMin: 2.0,
             xMax: 2.8,
@@ -50,6 +96,15 @@ export const LIFT_LEVELS = [
         theta: 0.1,
         dampingRate: 0.35,
         verticalEnabled: true,
+
+        artifact: {
+            id: "practice-load-4",
+            name: "Gallery artifact",
+            mass: 2,
+            radius: 0.22,
+        },
+        ropeBreakingStrength: 22,
+
         zone: {
             xMin: 1.2,
             xMax: 2.8,

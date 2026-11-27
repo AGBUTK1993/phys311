@@ -13,7 +13,12 @@ export class WinchWorld extends SuspensionWorld {
         this.maxLength = 4.5;
 
         // Gameplay setting, not a measured material strength.
-        this.breakStrength = 26;
+        // Default for worlds not initialized from a chamber.
+        // Normal gameplay uses the chamber-specific value.
+        this.breakStrength = 22;
+        // Highest rope tension during this chamber attempt.
+        // Diagnostic measurement only; does not affect the physics.
+        this.peakTension = 0;
 
         this.winchGear = 1; // Array index 1 means Gear 2.
         this.winchGears = [
@@ -59,6 +64,14 @@ export class WinchWorld extends SuspensionWorld {
     }
 
     checkRope() {
+        // Capture the peak before a broken/slack rope resets tension.
+        if (Number.isFinite(this.tension)) {
+            this.peakTension = Math.max(
+                this.peakTension,
+                this.tension
+            );
+        }
+
         if (this.tension > this.breakStrength) {
             this.ropeState = "broken";
             this.breakTime = this.time;
