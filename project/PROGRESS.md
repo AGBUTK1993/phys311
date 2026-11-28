@@ -317,3 +317,48 @@ Completed browser validation for the experimental chamber preservation system.
 - Experimental chamber only; original chambers remain untouched.
 - Model remains a gameplay preservation/exposure system, not a real fracture simulation.
 - Existing contact-model limitations still noted for edge/tilted cases, but Batch C goals passed.
+
+
+## Phase 5E.5-D — Delivery Objectives and Evaluation
+
+**Status:** COMPLETE — Validated November 28, 2026.
+
+### Implementation
+
+- Added a visible delivery objective and requirements.
+- Added delivery acceptance and rejection feedback.
+- Added performance ratings based on preservation.
+- Added an attempt summary showing preservation, impacts, time,
+  and overall performance rating.
+- Added Retry attempt functionality.
+- Preserved the selected experimental setup when retrying.
+- Extended automated validation from 25 to 32 checks.
+
+### Validation
+
+- Automated batch validation: 32/32 PASS.
+- Confirmed successful delivery evaluation in the browser.
+- Successful delivery achieved 87.3% preservation.
+- Delivery received an "Excellent" performance rating.
+- Confirmed the artifact was centered and stationary on the pedestal.
+- Attempt tracking visible in the evaluation summary.
+- All original automated validation checks remained passing.
+
+### Screenshots
+
+- project/validation/screenshots/phase5E5D_32_checks.png
+- project/validation/screenshots/phase5E5D_delivery_accepted.png
+
+### Known Limitations
+
+- The experimental chamber remains separate from the main game.
+- Tilted contacts and complex asymmetric landings require further work.
+- Artifact preservation remains a gameplay exposure model rather
+  than a physical fracture prediction.
+- The experimental system has not yet been integrated into the
+  original four playable chambers.
+
+### Next Phase — 5E.6
+
+Integrate validated experimental mechanics into the main game,
+while preserving existing gameplay and maintaining regression tests.

@@ -1,6 +1,7 @@
 /* Phase 5E.5-A hotfix regression checks. No changes to playable chambers. */
 import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_GEARS,EXP_DT} from './experimental-chamber-physics.js';
 import {createPreservationState,updatePreservationState,preservationSnapshot} from './experimental-chamber-preservation.js';
+import {summarizeDeliveryAttempt,objectiveStatus} from './experimental-chamber-objectives.js';
 function simulate({narrow=false,steps=720,control=null}={}) {
   const state=createExperimentalState({narrow});
   if(control)state.controls[control]=true;
@@ -64,5 +65,20 @@ export function runExperimentalChecks(){
   const loweredCondition=simulate({control:'down'});
   check('Lowered simulation exposes preservation snapshot',loweredCondition.preservation && Number.isFinite(loweredCondition.preservation.preservation),loweredCondition.preservation?.preservation);
   check('Snapshot provides delivery evaluation',loweredCondition.delivery && typeof loweredCondition.delivery.eligible==='boolean',loweredCondition.delivery?.eligible);
+  // 5E.5-D: read-only objective + evaluation and rating checks.
+  const ready=simulate({control:'down'});
+  const goal=objectiveStatus(ready);
+  check('D: Settled centered delivery meets all goals',goal.positioned&&goal.settled&&goal.preserved&&goal.ready,goal);
+  const accepted=summarizeDeliveryAttempt(ready,{attemptNumber:2});
+  check('D: Accepted result includes attempt and impacts',accepted.result==='accepted'&&accepted.attemptNumber===2&&accepted.impacts===ready.preservation.recordedImpacts,accepted.result);
+  check('D: Evaluation summary is immutable',Object.isFrozen(accepted)&&Object.isFrozen(accepted.reasons),null);
+  const pending=summarizeDeliveryAttempt(experimentalSnapshot(createExperimentalState()));
+  check('D: Suspended crate not yet deliverable',pending.result==='not-ready'&&pending.reasons.length>0,pending.result);
+  const altered={...ready,preservation:{...ready.preservation,preservation:0,failed:true},delivery:{...ready.delivery,eligible:false}};
+  const failed=summarizeDeliveryAttempt(altered);
+  check('D: Preservation failure cannot be accepted',failed.result==='failed'&&failed.grade===null,failed.result);
+  const gradeCases=[[99,'Exceptional'],[90,'Excellent'],[75,'Careful'],[50,'Recovered']];
+  check('D: Accepted ratings follow preservation bands',gradeCases.every(([preservation,grade])=>summarizeDeliveryAttempt({...ready,preservation:{...ready.preservation,preservation},delivery:{...ready.delivery,eligible:true}}).grade===grade),gradeCases.length);
+  check('D: Evaluation does not change physics snapshot',ready.y===.725 && accepted.preservation===ready.preservation.preservation,ready.y);
     return {passed:checks.every(x=>x.pass),checks};
 }

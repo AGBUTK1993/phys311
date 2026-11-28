@@ -1,9 +1,11 @@
 import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_DT,EXP_ATTACHMENTS,EXP_GEARS} from './experimental-chamber-physics.js';
 import {runExperimentalChecks} from './experimental-chamber-checks.js';
+import {summarizeDeliveryAttempt,objectiveStatus} from './experimental-chamber-objectives.js';
 const $=id=>document.getElementById(id);
 const canvas=$('expCanvas'),ctx=canvas.getContext('2d');
 let state=createExperimentalState();let accumulator=0,last=0;
 let notice='Ready for testing.';
+let attemptNumber=1;let lastResult=null;
 const gearLabel=()=>EXP_GEARS.find(g=>g.id===state.gear)?.label||'Normal';
 const cycleGear=()=>{const i=EXP_GEARS.findIndex(g=>g.id===state.gear);state.gear=EXP_GEARS[(i+1)%EXP_GEARS.length].id;notice=`${gearLabel()} gear selected.`};
 const scale=130;
@@ -33,6 +35,8 @@ function draw(){
   ctx.font='14px system-ui';ctx.fillText(`Pedestal: ${state.narrow?'narrow':'wide'}  •  ${state.paused?'PAUSED':'RUNNING'}`,18,55);
 }
 function updateUI(){const s=experimentalSnapshot(state);
+  const goals=objectiveStatus(s);
+  $('expObjective').innerHTML=[['On pedestal',goals.positioned],['Motion settled',goals.settled],['Preservation acceptable',goals.preserved]].map(([label,ok])=>`<span class="${ok?'ok':'no'}">${ok?'✓':'○'} ${label}</span>`).join('');
   const p=s.preservation;
   $('expCondition').textContent=`Condition: ${p.condition.toUpperCase()}`;
   $('expPreservationValue').textContent=`${p.preservation.toFixed(1)}%`;
@@ -54,14 +58,16 @@ function fail(err){state.paused=true;clearControls();state.error=String(err?.mes
 function frame(t){if(!last)last=t;const delta=Math.min((t-last)/1000,0.05);last=t;
   if(!state.paused){accumulator+=delta;let n=0;while(accumulator>=EXP_DT&&n<12){try{stepExperimentalState(state)}catch(e){fail(e);break}accumulator-=EXP_DT;n++}if(n===12)accumulator=0}
   draw();updateUI();requestAnimationFrame(frame)}
-function reset(){const narrow=state.narrow,gear=state.gear,artifactProfile=$('expProfile').value;state=createExperimentalState({narrow,artifactProfile});$('expDelivery').textContent='Set the artifact on the pedestal and allow it to settle.';state.gear=gear;notice='Reset complete.';accumulator=0;$('expStatus').textContent='Reset complete. Press Start, then move the rail with the arrows/W/S or on-screen controls.'}
+function reset(){const narrow=state.narrow,gear=state.gear,artifactProfile=$('expProfile').value;state=createExperimentalState({narrow,artifactProfile});lastResult=null;$('expDelivery').textContent='Set the artifact on the pedestal and allow it to settle.';$('expResult').className='delivery-result';$('expResult').textContent=`Attempt ${attemptNumber}: no evaluation yet.`;state.gear=gear;notice='Reset complete.';accumulator=0;$('expStatus').textContent='Reset complete. Press Start, then move the rail with the arrows/W/S or on-screen controls.'}
 $('expToggle').onclick=()=>{state.paused=!state.paused;clearControls();accumulator=0;$('expStatus').textContent=state.paused?'Paused. Press Start to resume.':'Running. Hold the direction buttons or use the keyboard; lower the rail to land, raise it to lift.'};
 $('expReset').onclick=reset;
+$('expRetry').onclick=()=>{attemptNumber++;reset();$('expStatus').textContent=`Attempt ${attemptNumber} ready. Press Start.`};
+$('expObjectiveHelp').onclick=()=>{const el=$('expObjectiveDetails');el.hidden=!el.hidden;$('expObjectiveHelp').textContent=el.hidden?'Show requirements':'Hide requirements'};
 $('expWidth').onclick=()=>{state.narrow=!state.narrow;reset()};
 $('expOffset').onclick=()=>{state.rightOffset=state.rightOffset?0:0.1;notice=state.rightOffset?'Right anchor raised 0.10 m. Watch for rotation.':'Anchor heights leveled.'};
 $('expGear').onclick=cycleGear;
-$('expProfile').onchange=reset;
-$('expEvaluate').onclick=()=>{const d=experimentalSnapshot(state).delivery;$('expDelivery').textContent=d.eligible?`DELIVERY ACCEPTED — ${d.preservation.toFixed(1)}% preservation (${d.condition}).`:`NOT READY — ${d.reason}.`};
+$('expProfile').onchange=()=>{attemptNumber=1;reset()};
+$('expEvaluate').onclick=()=>{lastResult=summarizeDeliveryAttempt(experimentalSnapshot(state),{attemptNumber});$('expDelivery').textContent=lastResult.message;const panel=$('expResult');panel.className='delivery-result'+(lastResult.result==='accepted'?' accepted':lastResult.result==='failed'?' failed':'');panel.textContent=`Attempt ${lastResult.attemptNumber} | ${lastResult.result.toUpperCase()} | Preservation ${lastResult.preservation.toFixed(1)}% | Recorded impacts ${lastResult.impacts} | Time ${lastResult.time.toFixed(1)} s${lastResult.grade?' | Rating: '+lastResult.grade:''}`;if(lastResult.result==='accepted'){state.paused=true;clearControls();accumulator=0;$('expStatus').textContent='Delivery accepted. Choose Retry attempt or Reset to replay.'}};
 $('expCenter').onclick=()=>{state.railX=0;state.railVx=0;state.controls.left=false;state.controls.right=false;notice='Rail centered; crate motion continues naturally.'};
 $('expCheck').onclick=()=>{const report=runExperimentalChecks();console.table(report.checks);$('expChecks').textContent=report.checks.map(x=>`${x.pass?'PASS':'FAIL'}  ${x.test}`).join('\n')+`\n\n${report.passed?'BATCH PASS':'BATCH FAIL'}`};
 const keys={ArrowLeft:'left',ArrowRight:'right',KeyA:'left',KeyD:'right',KeyW:'up',KeyS:'down',ArrowUp:'up',ArrowDown:'down'};
