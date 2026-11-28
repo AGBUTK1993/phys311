@@ -242,3 +242,48 @@ Next: Phase 5E — Integration of experimental rigid-body, rope, contact, and ar
 - Introduce controlled asymmetric suspension challenges.
 - Improve interaction feedback and diagnostics.
 - Perform gameplay regression testing before broader integration.
+
+
+## Phase 5E.5-B — Experimental Chamber Gameplay Improvements
+
+**Status:** COMPLETE — Validated November 28, 2026.
+
+### Implementation
+
+- Added Fine, Normal, and Fast winch gears.
+- Implemented smoother rail acceleration and deceleration.
+- Added a Center Rail control.
+- Added live rope tension labels and visual tension meters.
+- Added experimental asymmetric suspension by raising the right rope anchor.
+- Added live gear, anchor-offset, and suspension feedback.
+- Preserved the isolated experimental environment and original gameplay chambers.
+
+### Validation
+
+- Automated batch validation: 17/17 PASS.
+- Confirmed working gear selection and rail movement.
+- Confirmed live tension measurements and visual feedback.
+- Confirmed asymmetric suspension produces observable artifact rotation.
+- Verified the suspended crate remains controllable.
+- No test failures visible in the submitted screenshots.
+
+### Screenshots
+
+- `project/validation/screenshots/phase5E5B_17_checks.png`
+- `project/validation/screenshots/phase5E5B_gear_tension.png`
+- `project/validation/screenshots/phase5E5B_asymmetric_suspension.png`
+
+### Known Limitations
+
+- Advanced tilted contact and asymmetric landing remain experimental.
+- Rope tension indicators do not yet represent fully implemented rope-breaking behavior.
+- Impact counts are cumulative and should be distinguished from current contact status.
+- Artifact damage assessment is not yet fully integrated into the experimental chamber.
+
+### Next — Phase 5E.5-C
+
+- Integrate artifact condition and preservation scoring.
+- Connect physical impacts to the damage-assessment pipeline.
+- Introduce clear warnings and meaningful delivery outcomes.
+- Validate repeated contacts without counting continuous resting contact as repeated damage.
+- Preserve and regression-test the existing gameplay.

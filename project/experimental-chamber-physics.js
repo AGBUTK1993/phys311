@@ -13,6 +13,11 @@ import { correctRectanglePedestalPenetration } from './engine/rectangle-support-
 
 export const EXP_DT = 1 / 240;
 export const EXP_G = 9.81;
+export const EXP_GEARS = Object.freeze([
+  Object.freeze({id:'fine',label:'Fine',horizontal:0.28,vertical:0.22,accel:1.1}),
+  Object.freeze({id:'normal',label:'Normal',horizontal:0.65,vertical:0.50,accel:2.8}),
+  Object.freeze({id:'fast',label:'Fast',horizontal:1.00,vertical:0.78,accel:4.8})
+]);
 export const EXP_ATTACHMENTS = Object.freeze([{x: -0.4, y: 0}, {x: 0.4, y: 0}]);
 const bounded = (v,a,b) => Math.max(a, Math.min(b,v));
 
@@ -23,7 +28,7 @@ export function createExperimentalState({narrow=false}={}) {
   const pedestal = createPedestal({id:'experiment-pedestal',x:0,topY:0.6,width:narrow?0.6:2,height:0.4});
   return {
     body,pedestal,narrow, time:0,steps:0, paused:true,error:null,
-    railX:0, railY:3, rightOffset:0, tensions:[0,0], contactSteps:0,
+    railX:0, railY:3, railVx:0, railVy:0, gear:'normal', rightOffset:0, tensions:[0,0], contactSteps:0,
     lastReaction:0, impacts:0, wasInContact:false, maxPenetration:0,
     controls:{left:false,right:false,up:false,down:false}
   };
@@ -32,10 +37,17 @@ export function createExperimentalState({narrow=false}={}) {
 export function stepExperimentalState(s,dt=EXP_DT) {
   if (!Number.isFinite(dt)||dt<=0) throw new Error('Invalid experimental timestep');
   const b=s.body;
-  const dx=(Number(s.controls.right)-Number(s.controls.left))*0.65*dt;
-  const dy=(Number(s.controls.up)-Number(s.controls.down))*0.50*dt;
-  s.railX=bounded(s.railX+dx,-2.2,2.2);
-  s.railY=bounded(s.railY+dy,2.35,3.5);
+  const gear=EXP_GEARS.find(g=>g.id===s.gear) || EXP_GEARS[1];
+  const targetVx=(Number(s.controls.right)-Number(s.controls.left))*gear.horizontal;
+  const targetVy=(Number(s.controls.up)-Number(s.controls.down))*gear.vertical;
+  const approach=(current,target,limit)=>current+bounded(target-current,-limit,limit);
+  s.railVx=approach(s.railVx,targetVx,gear.accel*dt);
+  s.railVy=approach(s.railVy,targetVy,gear.accel*dt);
+  const oldX=s.railX, oldY=s.railY;
+  s.railX=bounded(s.railX+s.railVx*dt,-2.2,2.2);
+  s.railY=bounded(s.railY+s.railVy*dt,2.35,3.5);
+  if(s.railX===oldX && Math.abs(s.railX)>=2.2-1e-10)s.railVx=0;
+  if(s.railY===oldY && (s.railY<=2.35+1e-10 || s.railY>=3.5-1e-10))s.railVy=0;
   b.force.y-=b.m*EXP_G;
   // Mild viscous air damping; prevents endless spring oscillation.
   b.force.x-=2.5*b.vel.x;
@@ -69,6 +81,7 @@ export function experimentalSnapshot(s){
   const b=s.body;
   return Object.freeze({time:s.time,x:b.pos.x,y:b.pos.y,vx:b.vel.x,vy:b.vel.y,
     angle:b.angle,omega:b.angularVelocity,railX:s.railX,railY:s.railY,
+    railVx:s.railVx,railVy:s.railVy,gear:s.gear,rightOffset:s.rightOffset,
     tensionLeft:s.tensions[0],tensionRight:s.tensions[1],
     contactSteps:s.contactSteps,impacts:s.impacts,reaction:s.lastReaction,
     maxPenetration:s.maxPenetration,narrow:s.narrow,error:s.error});

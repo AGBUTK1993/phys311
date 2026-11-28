@@ -1,5 +1,5 @@
 /* Phase 5E.5-A hotfix regression checks. No changes to playable chambers. */
-import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_DT} from './experimental-chamber-physics.js';
+import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_GEARS,EXP_DT} from './experimental-chamber-physics.js';
 function simulate({narrow=false,steps=720,control=null}={}) {
   const state=createExperimentalState({narrow});
   if(control)state.controls[control]=true;
@@ -24,5 +24,22 @@ export function runExperimentalChecks(){
   check('Rail movement influences crate position',moved.x>0.1,moved.x);
   check('Up control raises the rail',raised.railY>3.1,raised.railY);
   check('Snapshot remains immutable',Object.isFrozen(experimentalSnapshot(createExperimentalState())),null);
+  const fine=createExperimentalState();fine.gear='fine';fine.controls.right=true;
+  const normal=createExperimentalState();normal.gear='normal';normal.controls.right=true;
+  const fast=createExperimentalState();fast.gear='fast';fast.controls.right=true;
+  for(let i=0;i<180;i++){stepExperimentalState(fine,EXP_DT);stepExperimentalState(normal,EXP_DT);stepExperimentalState(fast,EXP_DT)}
+  check('Three gears are defined',EXP_GEARS.length===3,EXP_GEARS.map(g=>g.label).join(', '));
+  check('Gears have ordered rail speeds',fine.railX<normal.railX&&normal.railX<fast.railX,`${fine.railX.toFixed(3)} < ${normal.railX.toFixed(3)} < ${fast.railX.toFixed(3)}`);
+  const coast=createExperimentalState();coast.controls.right=true;
+  for(let i=0;i<120;i++)stepExperimentalState(coast,EXP_DT);
+  coast.controls.right=false;const v0=coast.railVx;
+  for(let i=0;i<120;i++)stepExperimentalState(coast,EXP_DT);
+  check('Rail coasts to a controlled stop',v0>0&&Math.abs(coast.railVx)<1e-8,coast.railVx);
+  const offset=createExperimentalState();offset.rightOffset=.1;
+  for(let i=0;i<120;i++)stepExperimentalState(offset,EXP_DT);
+  check('Anchor offset induces actual rotation',Math.abs(offset.body.angle)>1e-4,offset.body.angle);
+  const gearSnap=experimentalSnapshot(fast);
+  check('Snapshot includes selected gear and rail speed',gearSnap.gear==='fast'&&Number.isFinite(gearSnap.railVx),gearSnap.gear);
+
   return {passed:checks.every(x=>x.pass),checks};
 }
