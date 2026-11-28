@@ -11,6 +11,7 @@ import { createSeededRandom } from "./random.js";
 import { WinchWorld } from "./engine/winch.js";
 import { DeliveryGoal } from "./delivery-goal.js";
 import { LIFT_LEVELS } from "./lift-levels.js";
+import { createPedestal } from "./engine/pedestals.js";
 
 // Create a fresh world containing a box of moving balls.
 export function createBoxScene({
@@ -292,6 +293,13 @@ export function createSuspensionScene(levelIndex = 0) {
 
     world.delivery = new DeliveryGoal();
     world.delivery.zone = { ...level.zone };
+
+    // Phase 5E: Experimental physical delivery surface.
+    // Geometry exists in the live world, but it is not
+    // rendered or used for collision response yet.
+    world.experimentalPedestal = createPedestal(
+        level.pedestal
+    );
 
     world.updateBodyState();
     return world;

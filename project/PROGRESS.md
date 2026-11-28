@@ -196,3 +196,49 @@ Limitations:
 - New physics modules are still independent of the playable game.
 
 Next: Phase 5E — Integration of experimental rigid-body, rope, contact, and artifact-condition systems into gameplay.
+
+
+## Phase 5E.5-A — Playable Experimental Chamber (Complete)
+
+**Status:** COMPLETE — Validated November 28, 2026.
+
+### Implementation
+
+- Created an isolated experimental physics chamber at `project/experimental-chamber.html`.
+- Integrated rectangular rigid-body dynamics, gravity, two spring-based ropes, and physical pedestal contact.
+- Added a movable suspension rail with horizontal and vertical controls.
+- Implemented keyboard and on-screen movement controls.
+- Added wide and narrow pedestal configurations.
+- Added live measurements for rope tensions, artifact position, vertical velocity, orientation, and contact events.
+- Added automated validation checks within the experimental chamber.
+- Corrected initial control-focus problems and adjusted rope stiffness to permit lifting the artifact after landing.
+- Preserved the existing four playable chambers and their original physics implementation.
+
+### Validation
+
+- All eight manual hotfix verification checks passed.
+- Automated experimental chamber validation: 12/12 PASS.
+- Confirmed the rectangular artifact can be lowered onto the pedestal and lifted again.
+- Confirmed that the artifact responds to horizontal and vertical rail movement.
+- Confirmed stable pedestal support and suspended operation in the browser.
+- No failures reported during the completed manual verification.
+
+### Validation Screenshots
+
+- `project/validation/screenshots/phase5E5A_pedestal_contact.png`
+- `project/validation/screenshots/phase5E5A_suspended_crate.png`
+
+### Known Limitations
+
+- Experimental chamber remains separate from the four original gameplay chambers.
+- More complex tilted landings, tipping, and asymmetric rope behavior require additional validation.
+- Contact physics are not yet a complete general-purpose rigid-body collision solver.
+- Artifact preservation and damage assessment are not yet fully integrated into the playable experimental chamber.
+
+### Next Steps — Phase 5E.5-B
+
+- Improve suspension and winch controls.
+- Refine rope motion and visual feedback.
+- Introduce controlled asymmetric suspension challenges.
+- Improve interaction feedback and diagnostics.
+- Perform gameplay regression testing before broader integration.

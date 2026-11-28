@@ -1,0 +1,28 @@
+/* Phase 5E.5-A hotfix regression checks. No changes to playable chambers. */
+import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_DT} from './experimental-chamber-physics.js';
+function simulate({narrow=false,steps=720,control=null}={}) {
+  const state=createExperimentalState({narrow});
+  if(control)state.controls[control]=true;
+  for(let i=0;i<steps;i++)stepExperimentalState(state,EXP_DT);
+  return experimentalSnapshot(state);
+}
+export function runExperimentalChecks(){
+  const checks=[];const check=(test,pass,actual)=>checks.push({test,pass:!!pass,actual});
+  const wide=simulate(),narrow=simulate({narrow:true});
+  const lowered=simulate({control:'down'});
+  const moved=simulate({control:'right',steps:360});
+  const raised=simulate({control:'up',steps:360});
+  check('Wide pedestal: numerical state finite',Object.values(wide).filter(v=>typeof v==='number').every(Number.isFinite),wide.y);
+  check('Narrow pedestal: numerical state finite',Object.values(narrow).filter(v=>typeof v==='number').every(Number.isFinite),narrow.y);
+  check('Crate remains suspended with raised rail',wide.y>.75,wide.y);
+  check('Symmetric suspension has no artificial rotation',Math.abs(wide.angle)<1e-8,wide.angle);
+  check('Two ropes carry positive tension',wide.tensionLeft>0&&wide.tensionRight>0,`${wide.tensionLeft}, ${wide.tensionRight}`);
+  check('Lowering the rail contacts the pedestal',lowered.contactSteps>100,lowered.contactSteps);
+  check('Lowered crate rests at y = 0.725 m',Math.abs(lowered.y-.725)<1e-8,lowered.y);
+  check('Lowered crate has zero vertical speed',Math.abs(lowered.vy)<1e-8,lowered.vy);
+  check('Left/right controls move the rail',moved.railX>0.5,moved.railX);
+  check('Rail movement influences crate position',moved.x>0.1,moved.x);
+  check('Up control raises the rail',raised.railY>3.1,raised.railY);
+  check('Snapshot remains immutable',Object.isFrozen(experimentalSnapshot(createExperimentalState())),null);
+  return {passed:checks.every(x=>x.pass),checks};
+}

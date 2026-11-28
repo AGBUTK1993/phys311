@@ -1,4 +1,5 @@
-// Chamber definitions only; physics remains in engine/suspension.js.
+
+ // Chamber definitions only; physics remains in engine/suspension.js.
 export const LIFT_LEVELS = [
     {
         id: "first-delivery",
@@ -22,7 +23,16 @@ export const LIFT_LEVELS = [
                 radius: 0.22,
             },
         },
+
         ropeBreakingStrength: 22,
+
+        pedestal: {
+            id: "first-delivery-pedestal",
+            x: 2.0,
+            topY: -1.35,
+            width: 0.70,
+            height: 0.35,
+        },
 
         zone: {
             xMin: 1.2,
@@ -31,6 +41,7 @@ export const LIFT_LEVELS = [
             yMax: -0.4,
         },
     },
+
     {
         id: "return-passage",
         name: "2 — Return passage",
@@ -53,7 +64,16 @@ export const LIFT_LEVELS = [
                 radius: 0.22,
             },
         },
+
         ropeBreakingStrength: 22,
+
+        pedestal: {
+            id: "return-passage-pedestal",
+            x: -2.3,
+            topY: -1.35,
+            width: 0.60,
+            height: 0.35,
+        },
 
         zone: {
             xMin: -2.8,
@@ -62,6 +82,7 @@ export const LIFT_LEVELS = [
             yMax: -0.4,
         },
     },
+
     {
         id: "steady-hands",
         name: "3 — Steady hands",
@@ -84,7 +105,16 @@ export const LIFT_LEVELS = [
                 radius: 0.22,
             },
         },
+
         ropeBreakingStrength: 22,
+
+        pedestal: {
+            id: "steady-hands-pedestal",
+            x: 2.4,
+            topY: -1.35,
+            width: 0.40,
+            height: 0.35,
+        },
 
         // Deliberately gentler gearing for a precision chamber.
         winchGears: [
@@ -112,6 +142,7 @@ export const LIFT_LEVELS = [
             yMax: -0.4,
         },
     },
+
     {
         id: "upper-gallery",
         name: "4 — Upper gallery",
@@ -121,12 +152,6 @@ export const LIFT_LEVELS = [
         dampingRate: 0.35,
         verticalEnabled: true,
 
-        artifact: {
-            id: "practice-load-4",
-            name: "Gallery artifact",
-            mass: 2,
-            radius: 0.22,
-        },
         artifact: {
             id: "practice-load-4",
             name: "Gallery artifact",
@@ -141,7 +166,16 @@ export const LIFT_LEVELS = [
                 radius: 0.22,
             },
         },
+
         ropeBreakingStrength: 22,
+
+        pedestal: {
+            id: "upper-gallery-pedestal",
+            x: 2.0,
+            topY: 0.85,
+            width: 0.70,
+            height: 0.35,
+        },
 
         zone: {
             xMin: 1.2,
