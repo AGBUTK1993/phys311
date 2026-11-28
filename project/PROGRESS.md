@@ -362,3 +362,31 @@ Completed browser validation for the experimental chamber preservation system.
 
 Integrate validated experimental mechanics into the main game,
 while preserving existing gameplay and maintaining regression tests.
+
+
+## Phase 5E.6-A — Automated Physics Regression Testing
+
+**Status:** VALIDATED — November 28, 2026.
+
+### Implementation
+- Added a browser-based automated physics regression dashboard.
+- Consolidated experimental gameplay and physics validation.
+- Added pass/fail summaries and expected-versus-observed results.
+- Added failure filtering and JSON/CSV report exports.
+- Preserved existing gameplay and physics implementations.
+
+### Validation
+- Full browser regression suite: 45/45 PASS.
+- No failed checks reported.
+- Dashboard screenshot saved:
+  `project/validation/screenshots/phase5E6A_test_dashboard.png`
+
+### Scope
+- Existing regression tests cover experimental gameplay,
+  rigid-body dynamics, rope mechanics, contact physics,
+  and coupled support behavior.
+- Additional integration and edge-case validation will be
+  added as development continues.
+
+### Next
+Phase 5E.6-B — Integrate advanced physics into the main game.
