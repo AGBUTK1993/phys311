@@ -153,3 +153,27 @@ The current beta provides a working interactive suspension-physics game, with su
 - Maximum relative energy deviation increased substantially for stiff connectors; at 3000 N/m, it decreased from approximately 48.54% (dt = 0.01 s) to 2.79% (dt = 0.001 s).
 - Conclusion: Stiff-rope dynamics require additional timestep and integrator validation before gameplay integration.
 - The original playable suspension engine remains separate and unchanged by these experimental rigid-body modules.
+
+### Phase 5B — Contact Geometry
+
+- Added finite-size pedestal geometry.
+- Validated circular contact and floating-point tangency tolerance.
+- Implemented rotated-rectangle corner detection.
+- Added polygon clipping to detect overlap with narrow surfaces.
+- Implemented geometric support-footprint and center-of-mass checks.
+- Preserved the original playable suspension mechanics.
+- Contact detection is currently separate from collision response.
+- Next: normal forces, friction, impacts, and stable resting contact.
+
+### Phase 5C — Contact Physics
+
+- Implemented isolated circular contact response with penetration correction and normal impulses.
+- Validated restitution from 0 (inelastic) to 1 (elastic).
+- Implemented experimental static and kinetic sliding friction.
+- Validated stopping distance and frictional energy dissipation.
+- Added frictional torque and sliding-to-rolling transition for uniform disks.
+- Added geometric equilibrium assessment and fixed-pivot tipping for rectangular artifacts.
+- Verified symmetry, pivot constraints, and numerical energy convergence.
+- Preserved existing playable suspension mechanics.
+- Limitations: contact modules remain experimental and separate; no general multi-contact rigid-body solver, dynamic normal-load distribution, or fully coupled rope/contact behavior yet.
+- Next: Phase 5D — impact mechanics and artifact damage.
