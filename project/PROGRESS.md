@@ -177,3 +177,22 @@ The current beta provides a working interactive suspension-physics game, with su
 - Preserved existing playable suspension mechanics.
 - Limitations: contact modules remain experimental and separate; no general multi-contact rigid-body solver, dynamic normal-load distribution, or fully coupled rope/contact behavior yet.
 - Next: Phase 5D — impact mechanics and artifact damage.
+
+### Phase 5D — Experimental Impact and Artifact Condition
+
+- Implemented analysis of collision impulse, incoming normal kinetic energy, restitution, and energy dissipation.
+- Added configurable low/moderate/high impact-intensity classifications.
+- Developed experimental artifact-vulnerability profiles with condition and geometry modifiers.
+- Added cumulative impact tracking with duplicate-event rejection and separate artifact histories.
+- Implemented configurable artifact-condition states, preservation scores, warnings, and gameplay failure recommendations.
+- Validated the complete impact-to-condition pipeline.
+- Preserved existing playable chamber mechanics.
+
+Limitations:
+- Vulnerability scales and failure thresholds are provisional gameplay parameters, not measured fracture limits.
+- Condition scores do not predict physical cracks or material integrity.
+- Automatic identification of distinct collision events remains to be implemented.
+- Impact analysis currently focuses on circular bodies and immovable surfaces; generalized off-center rigid-body impacts require further work.
+- New physics modules are still independent of the playable game.
+
+Next: Phase 5E — Integration of experimental rigid-body, rope, contact, and artifact-condition systems into gameplay.
