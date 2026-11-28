@@ -390,3 +390,31 @@ while preserving existing gameplay and maintaining regression tests.
 
 ### Next
 Phase 5E.6-B — Integrate advanced physics into the main game.
+
+
+## Phase 5E.6-B1 — Advanced Chamber Navigation
+
+**Status:** COMPLETE — Validated November 28, 2026.
+
+### Implementation
+- Added 05 — Advanced Hoist (Physics Preview) to the
+  main game's chamber-selection screen.
+- Connected the fifth chamber to the experimental
+  advanced-physics gameplay scene.
+- Added navigation back to the main chamber-selection screen.
+- Preserved the four original playable chambers.
+
+### Validation
+- All six browser integration checks passed.
+- Advanced chamber appears in Level Select.
+- Advanced chamber launches successfully.
+- Return navigation works.
+- Original chamber navigation remains functional.
+- Physics regression dashboard remains passing: 45/45.
+
+### Screenshot
+- project/validation/screenshots/phase5E6B1_chamber_navigation.png
+
+### Next
+Phase 5E.6-B2 — Shared completion and preservation tracking.
+

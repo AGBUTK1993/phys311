@@ -287,6 +287,24 @@
         }
     );
 
+    // Phase 5E.6-B: open advanced physics from the real level-select menu.
+    // Keep its simulation isolated until the integration regression suite is expanded.
+    const advancedChamberButton = document.getElementById("advanced-chamber-button");
+    if (advancedChamberButton) {
+        advancedChamberButton.addEventListener("click", () => {
+            window.location.assign("./experimental-chamber.html?from=chambers");
+        });
+    }
+
+    // Return from advanced physics directly to chamber selection.
+    // This does not initialize or alter the four existing chambers.
+    if (new URLSearchParams(window.location.search).get("screen") === "chambers") {
+        hasLeftSplash = true;
+        overlayRoot.classList.remove("ui-hidden");
+        showScreen(chamberSelect);
+        window.dispatchEvent(new Event("burial:request-progress"));
+    }
+
     // Start gameplay when Play is clicked.
     playButton.addEventListener("click", startGame);
 })();
