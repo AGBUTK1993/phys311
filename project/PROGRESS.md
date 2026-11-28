@@ -143,3 +143,13 @@ Before adding new features, I will complete the required validation, documentati
 - The CPU-throttling result demonstrates performance only under the tested browser and hardware conditions.
 
 The current beta provides a working interactive suspension-physics game, with successful validation of the two original proposal tests. The remaining work is primarily verification, documentation, and presentation rather than development of the core physics model.
+
+### Phase 5A — Experimental rigid-body physics validation
+
+- Implemented rotational inertia, torque integration, body-local attachment points, and combined translation/rotation.
+- Added a separate tension-only elastic connector model supporting multiple attachments.
+- Verified symmetric and asymmetric load sharing, slack behavior, and independent rope failure.
+- Stiffness tests (30, 300, 3000 N/m) remained finite at dt = 0.01, 0.005, and 0.001 s.
+- Maximum relative energy deviation increased substantially for stiff connectors; at 3000 N/m, it decreased from approximately 48.54% (dt = 0.01 s) to 2.79% (dt = 0.001 s).
+- Conclusion: Stiff-rope dynamics require additional timestep and integrator validation before gameplay integration.
+- The original playable suspension engine remains separate and unchanged by these experimental rigid-body modules.

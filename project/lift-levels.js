@@ -11,8 +11,16 @@ export const LIFT_LEVELS = [
         artifact: {
             id: "practice-load-1",
             name: "Training artifact",
+
+            // Physical properties currently used by the simulation.
             mass: 2,
-            radius: 0.22,
+
+            // Dimensions are expressed in metres.
+            // The current training artifact is modeled as a disk.
+            geometry: {
+                type: "disk",
+                radius: 0.22,
+            },
         },
         ropeBreakingStrength: 22,
 
@@ -34,8 +42,16 @@ export const LIFT_LEVELS = [
         artifact: {
             id: "practice-load-2",
             name: "Passage artifact",
+
+            // Physical properties currently used by the simulation.
             mass: 2,
-            radius: 0.22,
+
+            // Dimensions are expressed in metres.
+            // The current training artifact is modeled as a disk.
+            geometry: {
+                type: "disk",
+                radius: 0.22,
+            },
         },
         ropeBreakingStrength: 22,
 
@@ -57,8 +73,16 @@ export const LIFT_LEVELS = [
         artifact: {
             id: "practice-load-3",
             name: "Precision artifact",
+
+            // Physical properties currently used by the simulation.
             mass: 2,
-            radius: 0.22,
+
+            // Dimensions are expressed in metres.
+            // The current training artifact is modeled as a disk.
+            geometry: {
+                type: "disk",
+                radius: 0.22,
+            },
         },
         ropeBreakingStrength: 22,
 
@@ -102,6 +126,20 @@ export const LIFT_LEVELS = [
             name: "Gallery artifact",
             mass: 2,
             radius: 0.22,
+        },
+        artifact: {
+            id: "practice-load-4",
+            name: "Gallery artifact",
+
+            // Physical properties currently used by the simulation.
+            mass: 2,
+
+            // Dimensions are expressed in metres.
+            // The current training artifact is modeled as a disk.
+            geometry: {
+                type: "disk",
+                radius: 0.22,
+            },
         },
         ropeBreakingStrength: 22,
 

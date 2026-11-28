@@ -240,10 +240,33 @@ export function createSuspensionScene(levelIndex = 0) {
     // Configure the physical load for this chamber.
     const artifact = level.artifact;
 
+    // Validate the artifact definition before configuring the load.
+    if (
+        !Number.isFinite(artifact.mass) ||
+        artifact.mass <= 0 ||
+        artifact.geometry?.type !== "disk" ||
+        !Number.isFinite(artifact.geometry.radius) ||
+        artifact.geometry.radius <= 0
+    ) {
+        throw new Error(
+            `Invalid physical definition for artifact: ${artifact.id}`
+        );
+    }
+
+    // The current suspension engine treats the load as a circular
+    // body whose position represents its center of mass.
     world.load.m = artifact.mass;
     world.load.invMass = 1 / artifact.mass;
-    world.load.radius = artifact.radius;
+
+    // Recalculate moment of inertia after assigning mass.
+    world.load.configureGeometry(artifact.geometry);
+
     world.load.name = artifact.name;
+
+    // Preserve the geometry and identity for future rigid-body physics.
+    // Geometry is descriptive for now; only radius affects the
+    // existing circle-based collision and delivery calculations.
+    world.load.artifactId = artifact.id;
 
     world.breakStrength = level.ropeBreakingStrength;
 
