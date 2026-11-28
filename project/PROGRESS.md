@@ -287,3 +287,33 @@ Next: Phase 5E — Integration of experimental rigid-body, rope, contact, and ar
 - Introduce clear warnings and meaningful delivery outcomes.
 - Validate repeated contacts without counting continuous resting contact as repeated damage.
 - Preserve and regression-test the existing gameplay.
+
+## Phase 5E.5-C — Artifact preservation and delivery evaluation
+
+Completed browser validation for the experimental chamber preservation system.
+
+### Added
+- Collision-driven preservation tracking wired into actual landing events.
+- Gameplay preservation model with demonstration artifact profiles:
+  - Metal artifact
+  - Stone artifact
+  - Ceramic vessel
+- Preservation percentage, exposure total, recorded landings, and filtered contacts UI.
+- Delivery evaluation based on:
+  - artifact positioned on pedestal
+  - artifact settled
+  - preservation above failure threshold
+- Protection against repeated damage from persistent resting contact.
+- Separate landing events counted only after real separation.
+
+### Verified
+- Full Batch C validation checklist passed in browser.
+- Batch output reported BATCH PASS.
+- Preservation panel updated correctly during testing.
+- Delivery evaluation worked after settling on pedestal.
+- Different artifact profiles showed different preservation outcomes.
+
+### Notes
+- Experimental chamber only; original chambers remain untouched.
+- Model remains a gameplay preservation/exposure system, not a real fracture simulation.
+- Existing contact-model limitations still noted for edge/tilted cases, but Batch C goals passed.

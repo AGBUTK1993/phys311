@@ -1,5 +1,6 @@
 /* Phase 5E.5-A hotfix regression checks. No changes to playable chambers. */
 import {createExperimentalState,stepExperimentalState,experimentalSnapshot,EXP_GEARS,EXP_DT} from './experimental-chamber-physics.js';
+import {createPreservationState,updatePreservationState,preservationSnapshot} from './experimental-chamber-preservation.js';
 function simulate({narrow=false,steps=720,control=null}={}) {
   const state=createExperimentalState({narrow});
   if(control)state.controls[control]=true;
@@ -41,5 +42,27 @@ export function runExperimentalChecks(){
   const gearSnap=experimentalSnapshot(fast);
   check('Snapshot includes selected gear and rail speed',gearSnap.gear==='fast'&&Number.isFinite(gearSnap.railVx),gearSnap.gear);
 
-  return {passed:checks.every(x=>x.pass),checks};
+  // 5E.5-C: genuine impacts versus persistent contact.
+  const quiet=createPreservationState('stone');
+  for(let i=0;i<240;i++)updatePreservationState(quiet,{time:(i+1)*EXP_DT,separation:-0.0001,normalSpeed:i===0?-0.04:0,normalImpulse:i===0?0.08:0,mass:2});
+  const quietSnap=preservationSnapshot(quiet);
+  check('Gentle resting contact does not accumulate damage',quietSnap.recordedImpacts===0&&quietSnap.totalExposure===0,quietSnap.totalExposure);
+  const rough=createPreservationState('ceramic');
+  updatePreservationState(rough,{time:.1,separation:-.01,normalSpeed:-2,normalImpulse:4,mass:2});
+  for(let i=1;i<=200;i++)updatePreservationState(rough,{time:.1+i*EXP_DT,separation:-.0001,normalSpeed:0,normalImpulse:0,mass:2});
+  const roughSnap=preservationSnapshot(rough);
+  check('Rough impact recorded exactly once despite resting contact',roughSnap.recordedImpacts===1&&roughSnap.totalExposure>0,roughSnap.recordedImpacts);
+  check('Rough impact reduces preservation',roughSnap.preservation<100,roughSnap.preservation);
+  check('Impact state reports distinct contact active',roughSnap.contactActive===true,roughSnap.contactActive);
+  updatePreservationState(rough,{time:1.1,separation:.02,normalSpeed:0,mass:2});
+  updatePreservationState(rough,{time:1.2,separation:-.01,normalSpeed:-1.2,normalImpulse:2.4,mass:2});
+  const rebound=preservationSnapshot(rough);
+  check('New landing after separation counts separately',rebound.recordedImpacts===2,rebound.recordedImpacts);
+  const stone=createPreservationState('stone');
+  updatePreservationState(stone,{time:.1,separation:-.01,normalSpeed:-2,normalImpulse:4,mass:2});
+  check('Stone profile has lower demonstration exposure than ceramic',preservationSnapshot(stone).totalExposure<roughSnap.totalExposure,preservationSnapshot(stone).totalExposure);
+  const loweredCondition=simulate({control:'down'});
+  check('Lowered simulation exposes preservation snapshot',loweredCondition.preservation && Number.isFinite(loweredCondition.preservation.preservation),loweredCondition.preservation?.preservation);
+  check('Snapshot provides delivery evaluation',loweredCondition.delivery && typeof loweredCondition.delivery.eligible==='boolean',loweredCondition.delivery?.eligible);
+    return {passed:checks.every(x=>x.pass),checks};
 }

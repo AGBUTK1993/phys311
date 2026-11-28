@@ -10,6 +10,7 @@ import { stepRigidBody } from './engine/rigid-body-integrator.js';
 import { sampleRectanglePedestalContacts } from './engine/rectangle-contact-geometry.js';
 import { resolveRectangleActiveContacts } from './engine/rectangle-contact-active-set.js';
 import { correctRectanglePedestalPenetration } from './engine/rectangle-support-correction.js';
+import {createPreservationState,updatePreservationState,preservationSnapshot,evaluateExperimentalDelivery} from './experimental-chamber-preservation.js';
 
 export const EXP_DT = 1 / 240;
 export const EXP_G = 9.81;
@@ -21,7 +22,7 @@ export const EXP_GEARS = Object.freeze([
 export const EXP_ATTACHMENTS = Object.freeze([{x: -0.4, y: 0}, {x: 0.4, y: 0}]);
 const bounded = (v,a,b) => Math.max(a, Math.min(b,v));
 
-export function createExperimentalState({narrow=false}={}) {
+export function createExperimentalState({narrow=false,artifactProfile='stone'}={}) {
   const body = new Body({m:2, name:'Experimental stone crate'});
   body.configureGeometry({type:'rectangle',width:1.2,height:0.25});
   body.pos.set(0,2);
@@ -30,6 +31,7 @@ export function createExperimentalState({narrow=false}={}) {
     body,pedestal,narrow, time:0,steps:0, paused:true,error:null,
     railX:0, railY:3, railVx:0, railVy:0, gear:'normal', rightOffset:0, tensions:[0,0], contactSteps:0,
     lastReaction:0, impacts:0, wasInContact:false, maxPenetration:0,
+    preservation:createPreservationState(artifactProfile),
     controls:{left:false,right:false,up:false,down:false}
   };
 }
@@ -60,15 +62,26 @@ export function stepExperimentalState(s,dt=EXP_DT) {
   stepRigidBody(b,dt);
   const contacts=sampleRectanglePedestalContacts(b,s.pedestal);
   const touching=contacts.length>0;
+  const incomingSpeed=touching?Math.min(...contacts.map(c=>c.normalSpeed)):0;
   s.lastReaction=0;
+  let impulse=0;
   if(touching){
     const collision=resolveRectangleActiveContacts(b,contacts,{restitution:0});
-    s.lastReaction=collision.totalNormalImpulse/dt;
+    impulse=collision.totalNormalImpulse;
+    s.lastReaction=impulse/dt;
     const correction=correctRectanglePedestalPenetration(b,s.pedestal);
     s.maxPenetration=Math.max(s.maxPenetration,correction.remainingMaximumPenetration);
     s.contactSteps++;
     if(!s.wasInContact && contacts.some(c=>c.normalSpeed< -0.1)) s.impacts++;
   }
+  // Use geometric separation with hysteresis to avoid re-counting resting contact.
+  const halfHeight=b.geometry.height/2;
+  const angularExtent=Math.abs(Math.sin(b.angle))*b.geometry.width/2+Math.abs(Math.cos(b.angle))*halfHeight;
+  const withinX=b.pos.x+0.6>=s.pedestal.xMin && b.pos.x-0.6<=s.pedestal.xMax;
+  const gap=withinX ? b.pos.y-angularExtent-s.pedestal.topY : 1;
+  updatePreservationState(s.preservation,{time:s.time+dt,
+    separation:touching?-Math.max(0,...contacts.map(c=>c.penetration)):Math.max(0,gap),
+    normalSpeed:touching?incomingSpeed:0,normalImpulse:impulse,mass:b.m});
   s.wasInContact=touching;
   s.time+=dt;s.steps++;
   if(![b.pos.x,b.pos.y,b.vel.x,b.vel.y,b.angle,b.angularVelocity,s.lastReaction,...s.tensions].every(Number.isFinite)){
@@ -84,5 +97,7 @@ export function experimentalSnapshot(s){
     railVx:s.railVx,railVy:s.railVy,gear:s.gear,rightOffset:s.rightOffset,
     tensionLeft:s.tensions[0],tensionRight:s.tensions[1],
     contactSteps:s.contactSteps,impacts:s.impacts,reaction:s.lastReaction,
-    maxPenetration:s.maxPenetration,narrow:s.narrow,error:s.error});
+    maxPenetration:s.maxPenetration,narrow:s.narrow,error:s.error,
+    preservation:preservationSnapshot(s.preservation),
+    delivery:evaluateExperimentalDelivery(s.preservation,{body:b,pedestal:s.pedestal,ropeTensions:s.tensions})});
 }
